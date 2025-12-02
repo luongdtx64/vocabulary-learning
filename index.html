@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>web hỗ trợ học từ vựng</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>A present from Luong ETO</h1>
+
+    <!-- Menu -->
+    <div id="menu-screen" class="screen active">
+        <button class="main-btn" onclick="showScreen('add-screen')">Thêm từ</button>
+        <button class="main-btn" onclick="showScreen('review-screen')">Ôn tập</button>
+        <button id="credit-btn" class="main-btn">Credit</button>
+    </div>
+
+    <!-- Thêm từ -->
+    <!-- Thêm từ -->
+    <div id="add-screen" class="screen">
+        <h2>Thêm từ mới</h2>
+        <div class="input-box">
+            <input type="text" id="word-input" placeholder="Từ tiếng Anh">
+            <input type="text" id="meaning-input" placeholder="Nghĩa">
+            <select id="type-input">
+                <option value="Danh từ">Danh từ</option>
+                <option value="Động từ">Động từ</option>
+                <option value="Tính từ">Tính từ</option>
+                <option value="Trạng từ">Trạng từ</option>
+                <option value="Đại từ">Đại từ</option>
+                <option value="Giới từ">Giới từ</option>
+                <option value="Liên từ">Liên từ</option>
+                <option value="Thán từ">Thán từ</option>
+            </select>
+            <button id="save-btn" onclick="addWord()">Thêm từ</button>
+
+            <!-- Nút quản lý từ -->
+            <button class="main-btn" onclick="showAllWords()">Hiển thị tất cả từ</button>
+            <button class="main-btn" onclick="deleteAllWords()">Xoá tất cả từ</button>
+            <button class="main-btn" onclick="showDeleteWordPrompt()">Tìm & xoá từ</button>
+
+            <button class="back-btn" onclick="showScreen('menu-screen')">Quay lại</button>
+        </div>
+
+        <!-- Danh sách từ -->
+        <div id="word-list" class="input-box" style="margin-top:20px; display:none;"></div>
+    </div>
+
+
+    <!-- Ôn tập -->
+    <div id="review-screen" class="screen">
+        <h2>Ôn tập từ</h2>
+        <div id="flashcard" class="card">
+            <p id="review-word">Từ</p>
+            <p id="review-meaning">Nghĩa</p>
+            <p id="review-type" class="type-tag">Loại từ</p>
+        </div>
+        <button id="next-btn">Tiếp theo</button>
+        <button class="back-btn" onclick="showScreen('menu-screen')">Quay lại</button>
+    </div>
+</div>
+
+<!-- Message Box -->
+<div id="msgbox" class="msgbox hidden"></div>
+<!-- Nút credit -->
+
+<!-- Popup Credit -->
+<div id="credit-popup" class="credit-popup hidden">
+    <div class="credit-content">
+        <h2>From ETO CLUB WITH LOVE</h2>
+        <a class="credit-fb" href="https://www.facebook.com/luongdtx64" target="_blank">
+            <i class="fa-brands fa-facebook"></i> Facebook
+        </a>
+        <p>Mọi ý kiến đóng góp hay báo cáo lỗi xin gửi về gmail bên dưới</p>
+        <p class="credit-gmail">luongdtx64@gmail.com</p>
+        <button class="btn-credit">Đóng</button>
+    </div>
+</div>
+
+<script src="scripts.js"></script>
+</body>
+</html>
