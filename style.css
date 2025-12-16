@@ -11,8 +11,6 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-image: url("https://mygyuuuncollection.web.app/images/Usagyuuun!%204/1.gif");
-
 }
 
 .container {
@@ -232,3 +230,4 @@ h1, h2 {
 }
 
 .btn-credit:hover { background: #ffe6ef; }
+
