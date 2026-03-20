@@ -54,6 +54,32 @@ h1, h2 {
 #next-btn { background: #ff85a2; color: #fff; }
 #next-btn:hover { background: #e06f8d; }
 
+/* ====== Import / Export buttons ====== */
+.btn-export {
+    background: #d4edda;
+    color: #1a6b35;
+    font-size: 16px;
+    padding: 12px;
+}
+.btn-export:hover { background: #b8dfc4 !important; transform: translateY(-2px); }
+
+.btn-import {
+    background: #cce5ff;
+    color: #1a4a7a;
+    font-size: 16px;
+    padding: 12px;
+}
+.btn-import:hover { background: #a8d0f5 !important; transform: translateY(-2px); }
+
+.btn-paste {
+    background: #fff3cd;
+    color: #7a5a00;
+    font-size: 16px;
+    padding: 12px;
+}
+.btn-paste:hover { background: #ffe69c !important; transform: translateY(-2px); }
+/* ===================================== */
+
 .back-btn {
     margin-top: 15px;
     width: 100%;
@@ -104,7 +130,6 @@ h1, h2 {
 .type-tag { color: #ff4b81; font-weight: bold; }
 
 /* Message Box */
-/* Message Box */
 .msgbox {
     position: fixed;
     top: 50%;
@@ -139,7 +164,6 @@ h1, h2 {
     margin-top: 10px;
 }
 
-/* Nút trong message box */
 .msg-btn {
     padding: 10px 22px;
     border: none;
@@ -156,7 +180,6 @@ h1, h2 {
 .msg-btn.no { background: #f0f0f0; color: #333; }
 .msg-btn.no:hover { background: #ddd; }
 
-/* Animation hiện popup */
 @keyframes popIn {
     0% { transform: translate(-50%, -60%) scale(0.7); opacity: 0; }
     100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
@@ -164,18 +187,14 @@ h1, h2 {
 
 /* Responsive */
 @media (max-width: 480px){
+    .container { padding: 20px; }
+    .main-btn, #save-btn, #next-btn, .back-btn { font-size: 16px; padding: 12px; }
+    .card { padding: 20px; }
     .msgbox { font-size: 18px; padding: 20px 25px; }
     .msgbox img { max-width: 140px; }
     .msg-btn { font-size: 15px; padding: 8px 18px; }
 }
 
-/* ------------------- Responsive ------------------- */
-@media (max-width: 480px){
-    .container { padding: 20px; }
-    .main-btn, #save-btn, #next-btn, .back-btn { font-size: 16px; padding: 12px; }
-    .card { padding: 20px; }
-    .msgbox img { max-width: 100px; }
-}
 /* Popup Credit */
 .credit-popup {
     position: fixed;
@@ -204,7 +223,6 @@ h1, h2 {
 }
 
 .credit-content h2 { margin-bottom: 15px; }
-
 .credit-content p { margin: 8px 0; font-size: 16px; }
 
 .credit-fb {
@@ -215,7 +233,6 @@ h1, h2 {
     font-weight: bold;
     font-size: 26px;
 }
-
 .credit-fb i { margin-right: 8px; }
 
 .btn-credit {
@@ -227,7 +244,6 @@ h1, h2 {
     font-weight: 600;
     cursor: pointer;
     transition: 0.25s;
+    margin-top: 10px;
 }
-
 .btn-credit:hover { background: #ffe6ef; }
-
