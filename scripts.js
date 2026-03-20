@@ -152,6 +152,13 @@ function showNextWord() {
         nextBtn.style.display = "inline-block";
         nextBtn.innerText = "Kiểm tra & Tiếp theo";
         nextBtn.onclick = checkUserMeaning;
+
+        // Nhấn Enter để xác nhận đáp án
+        const input = document.getElementById("user-meaning");
+        input.focus();
+        input.addEventListener("keydown", function handler(e){
+            if(e.key === "Enter"){ input.removeEventListener("keydown", handler); checkUserMeaning(); }
+        });
     }, 300);
 }
 
@@ -333,6 +340,14 @@ function submitJsonPaste(){
         showMsg("JSON không hợp lệ: " + err.message);
     }
 }
+
+/* -------------------- ENTER KEY (thêm từ) -------------------- */
+document.getElementById("word-input").addEventListener("keydown", e => {
+    if(e.key === "Enter") document.getElementById("meaning-input").focus();
+});
+document.getElementById("meaning-input").addEventListener("keydown", e => {
+    if(e.key === "Enter") addWord();
+});
 
 /* -------------------- CREDIT -------------------- */
 document.getElementById("credit-btn").addEventListener("click", ()=>{
