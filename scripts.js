@@ -169,9 +169,9 @@ function checkUserMeaning() {
     if(!userInput){ showMsg("Bạn chưa nhập nghĩa!"); return; }
 
     if(userInput === correctMeaning){
-        showMsgWithGif("Chính xác! 🎉", "https://mygyuuuncollection.web.app/images/Peppy%20Usagyuuun!/5.gif", showNextWord);
+        showMsgWithGif("Chính xác! 🎉", "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3Rma3dkN2c0ZWVjZTVxd3huMmFpdmNoYXVya282bHRpbmJjM20wZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VhWVAa7rUtT3xKX6Cd/giphy.gif", showNextWord);
     } else {
-        showMsgWithGif(`Sai! Nghĩa đúng là: "${currentWord.meaning}"`, "https://mygyuuuncollection.web.app/images/Peppy%20Usagyuuun!/9.gif", showNextWord);
+        showMsgWithGif(`Sai! Nghĩa đúng là: "${currentWord.meaning}"`, "https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdTYzc2k1ZmJyNHZzNjMzdWlxeTFwM3A3MHB0OXd2NHY5bTdzajdsciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Lz6971fkGSgCMOOncl/giphy.gif", showNextWord);
     }
 }
 
