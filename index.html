@@ -3,122 +3,283 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>web hỗ trợ học từ vựng</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+<title>Từ Vựng — ETO Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-    <h1>A present from Luong ETO</h1>
 
-    <!-- Menu -->
-    <div id="menu-screen" class="screen active">
-        <button class="main-btn" onclick="showScreen('add-screen')">Thêm từ</button>
-        <button class="main-btn" onclick="showScreen('review-screen')">Ôn tập</button>
-        <button id="credit-btn" class="main-btn">Credit</button>
+<!-- Animated background blobs -->
+<div class="bg-blob blob1"></div>
+<div class="bg-blob blob2"></div>
+<div class="bg-blob blob3"></div>
+
+<div class="app-wrapper">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo">ETO CLUB</div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill" id="word-count-pill">
+        <span class="stat-icon">📚</span>
+        <span id="total-words-display">0</span> từ
+      </div>
+      <div class="stat-pill streak-pill" id="streak-pill">
+        <span class="stat-icon">🔥</span>
+        <span id="streak-display">0</span> ngày
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MENU SCREEN ===== -->
+  <div id="menu-screen" class="screen active">
+    <div class="hero-section">
+      <h1 class="hero-title">Học từ vựng<br><span class="hero-accent">thật dễ thương</span> 💕</h1>
+      <p class="hero-sub">A present from <strong>Luong ETO</strong></p>
     </div>
 
-    <!-- Thêm từ -->
-    <div id="add-screen" class="screen">
-        <h2>Thêm từ mới</h2>
-        <div class="input-box">
-            <input type="text" id="word-input" placeholder="Từ tiếng Anh">
-            <input type="text" id="meaning-input" placeholder="Nghĩa">
-            <select id="type-input">
-                <option value="Danh từ">Danh từ</option>
-                <option value="Động từ">Động từ</option>
-                <option value="Tính từ">Tính từ</option>
-                <option value="Trạng từ">Trạng từ</option>
-                <option value="Đại từ">Đại từ</option>
-                <option value="Giới từ">Giới từ</option>
-                <option value="Liên từ">Liên từ</option>
-                <option value="Thán từ">Thán từ</option>
-            </select>
-            <button id="save-btn" onclick="addWord()">Thêm từ</button>
+    <div class="menu-grid">
+      <button class="menu-card card-add" onclick="showScreen('add-screen')">
+        <div class="card-icon">✏️</div>
+        <div class="card-label">Thêm từ</div>
+        <div class="card-desc">Thêm từ vựng mới</div>
+      </button>
+      <button class="menu-card card-review" onclick="showScreen('review-screen')">
+        <div class="card-icon">🃏</div>
+        <div class="card-label">Ôn tập</div>
+        <div class="card-desc">Flashcard & kiểm tra</div>
+      </button>
+      <button class="menu-card card-list" onclick="showScreen('list-screen')">
+        <div class="card-icon">📖</div>
+        <div class="card-label">Từ điển</div>
+        <div class="card-desc">Xem & quản lý từ</div>
+      </button>
+      <button class="menu-card card-backup" onclick="showScreen('backup-screen')">
+        <div class="card-icon">💾</div>
+        <div class="card-label">Sao lưu</div>
+        <div class="card-desc">Import / Export</div>
+      </button>
+    </div>
 
-            <!-- Nút quản lý từ -->
-            <button class="main-btn" onclick="showAllWords()">Hiển thị tất cả từ</button>
-            <button class="main-btn" onclick="deleteAllWords()">Xoá tất cả từ</button>
-            <button class="main-btn" onclick="showDeleteWordPrompt()">Tìm & xoá từ</button>
+    <!-- Wrong words practice button -->
+    <button class="wrong-words-btn" id="wrong-words-btn" onclick="startWrongWordsReview()" style="display:none">
+      <span class="wrong-words-icon">⚔️</span>
+      <span class="wrong-words-label">Luyện từ sai</span>
+      <span class="wrong-count-badge" id="wrong-count-badge">0</span>
+    </button>
 
-            <!-- ====== NÚT IMPORT / EXPORT JSON ====== -->
-            <hr style="border:1px dashed #ffb3c6; margin:12px 0;">
-            <p style="text-align:center; font-size:14px; color:#c05070; margin:0 0 6px 0; font-weight:600;">
-                💾 Sao lưu & Khôi phục dữ liệu
-            </p>
-            <button class="main-btn btn-export" onclick="exportWords()">
-                <i class="fa-solid fa-file-arrow-down"></i> Xuất JSON (backup)
-            </button>
-            <button class="main-btn btn-import" onclick="importWords()">
-                <i class="fa-solid fa-file-arrow-up"></i> Nhập từ file JSON
-            </button>
-            <button class="main-btn btn-paste" onclick="showJsonPasteBox()">
-                <i class="fa-solid fa-paste"></i> Dán JSON thủ công
-            </button>
-            <!-- Input file ẩn -->
-            <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImportFile(event)">
-            <!-- ======================================= -->
+    <button class="credit-link" id="credit-btn">Made with 💖 · Credit</button>
+  </div>
 
-            <button class="back-btn" onclick="showScreen('menu-screen')">Quay lại</button>
+  <!-- ===== ADD SCREEN ===== -->
+  <div id="add-screen" class="screen">
+    <div class="screen-header">
+      <button class="back-icon-btn" onclick="showScreen('menu-screen')">←</button>
+      <h2>Thêm từ mới</h2>
+    </div>
+
+    <div class="form-card">
+      <div class="input-group">
+        <label>Từ tiếng Anh</label>
+        <div class="input-with-icon">
+          <input type="text" id="word-input" placeholder="Ví dụ: beautiful" autocomplete="off" spellcheck="false">
+          <button class="tts-btn-inline" onclick="speakText(document.getElementById('word-input').value)" title="Nghe phát âm">🔊</button>
         </div>
-
-        <!-- Danh sách từ -->
-        <div id="word-list" class="input-box" style="margin-top:20px; display:none;"></div>
-    </div>
-
-    <!-- Ôn tập -->
-    <div id="review-screen" class="screen">
-        <h2>Ôn tập từ</h2>
-        <div id="flashcard" class="card">
-            <p id="review-word">Từ</p>
-            <p id="review-meaning">Nghĩa</p>
-            <p id="review-type" class="type-tag">Loại từ</p>
+      </div>
+      <div class="input-group">
+        <label>Nghĩa tiếng Việt</label>
+        <input type="text" id="meaning-input" placeholder="Ví dụ: xinh đẹp" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label>Loại từ</label>
+        <div class="type-pills" id="type-selector">
+          <button class="type-pill active" data-type="Danh từ">Danh từ</button>
+          <button class="type-pill" data-type="Động từ">Động từ</button>
+          <button class="type-pill" data-type="Tính từ">Tính từ</button>
+          <button class="type-pill" data-type="Trạng từ">Trạng từ</button>
+          <button class="type-pill" data-type="Đại từ">Đại từ</button>
+          <button class="type-pill" data-type="Giới từ">Giới từ</button>
+          <button class="type-pill" data-type="Liên từ">Liên từ</button>
+          <button class="type-pill" data-type="Thán từ">Thán từ</button>
         </div>
-        <button id="next-btn">Tiếp theo</button>
-        <button class="back-btn" onclick="showScreen('menu-screen')">Quay lại</button>
+      </div>
+      <button class="primary-btn" onclick="addWord()">
+        <span>➕ Thêm từ</span>
+      </button>
     </div>
-</div>
+  </div>
+
+  <!-- ===== REVIEW SCREEN ===== -->
+  <div id="review-screen" class="screen">
+    <div class="screen-header">
+      <button class="back-icon-btn" onclick="showScreen('menu-screen')">←</button>
+      <h2>Ôn tập</h2>
+      <div class="review-progress-text"><span id="progress-current">0</span>/<span id="progress-total">0</span></div>
+    </div>
+
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+
+    <div id="no-words-msg" class="empty-state" style="display:none">
+      <div class="empty-icon">📭</div>
+      <p>Chưa có từ nào!<br>Hãy thêm từ vựng trước nhé.</p>
+      <button class="primary-btn" onclick="showScreen('add-screen')">Thêm từ ngay</button>
+    </div>
+
+    <div id="review-content">
+      <!-- Flashcard flip -->
+      <div class="flip-card-container" id="flip-card-container" onclick="flipCard()">
+        <div class="flip-card" id="flip-card">
+          <div class="flip-front">
+            <div class="card-hint">Nhấn để xem nghĩa 👆</div>
+            <div class="card-word" id="review-word">—</div>
+            <div class="card-type-badge" id="review-type-front">—</div>
+            <button class="tts-card-btn" onclick="event.stopPropagation(); speakCurrentWord()" title="Phát âm">🔊</button>
+          </div>
+          <div class="flip-back">
+            <div class="card-hint">Nghĩa của từ</div>
+            <div class="card-meaning" id="review-meaning-back">—</div>
+            <div class="card-type-badge" id="review-type-back">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input answer -->
+      <div class="answer-box" id="answer-box">
+        <input type="text" id="user-meaning" placeholder="Nhập nghĩa tiếng Việt..." autocomplete="off">
+        <div class="answer-actions">
+          <button class="primary-btn" id="check-btn" onclick="checkUserMeaning()">Kiểm tra ✓</button>
+          <button class="skip-btn" id="skip-btn" onclick="skipWord()">Bỏ qua →</button>
+        </div>
+        <div class="answer-hint">⌨️ Nhấn Enter để kiểm tra</div>
+      </div>
+
+      <!-- Result shown after check -->
+      <div class="result-box hidden" id="result-box">
+        <div class="result-icon" id="result-icon"></div>
+        <div class="result-text" id="result-text"></div>
+        <button class="primary-btn" id="next-btn" onclick="showNextWord()">Tiếp theo →</button>
+      </div>
+    </div>
+
+    <!-- Session complete -->
+    <div id="session-complete" class="empty-state" style="display:none">
+      <div class="empty-icon">🎉</div>
+      <p id="session-summary">Bạn đã ôn xong lượt này!</p>
+      <div class="session-score" id="session-score"></div>
+      <button class="wrong-practice-end-btn" id="practice-wrong-btn" onclick="startWrongWordsReview()" style="display:none">
+        ⚔️ Luyện <span class="wrong-count">0</span> từ sai
+      </button>
+      <button class="primary-btn" onclick="restartReview()">Ôn lại 🔄</button>
+      <button class="secondary-btn" onclick="showScreen('menu-screen')">Về menu</button>
+    </div>
+  </div>
+
+  <!-- ===== LIST / DICTIONARY SCREEN ===== -->
+  <div id="list-screen" class="screen">
+    <div class="screen-header">
+      <button class="back-icon-btn" onclick="showScreen('menu-screen')">←</button>
+      <h2>Từ điển</h2>
+    </div>
+
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Tìm kiếm từ..." oninput="renderWordList()">
+    </div>
+
+    <div class="filter-bar" id="filter-bar">
+      <button class="filter-pill active" data-filter="Tất cả" onclick="setFilter(this)">Tất cả</button>
+      <button class="filter-pill" data-filter="Danh từ" onclick="setFilter(this)">Danh từ</button>
+      <button class="filter-pill" data-filter="Động từ" onclick="setFilter(this)">Động từ</button>
+      <button class="filter-pill" data-filter="Tính từ" onclick="setFilter(this)">Tính từ</button>
+      <button class="filter-pill" data-filter="Trạng từ" onclick="setFilter(this)">Trạng từ</button>
+    </div>
+
+    <div id="word-list-container"></div>
+
+    <button class="danger-btn" onclick="deleteAllWords()" style="margin-top:16px">🗑️ Xoá tất cả từ</button>
+  </div>
+
+  <!-- ===== BACKUP SCREEN ===== -->
+  <div id="backup-screen" class="screen">
+    <div class="screen-header">
+      <button class="back-icon-btn" onclick="showScreen('menu-screen')">←</button>
+      <h2>Sao lưu dữ liệu</h2>
+    </div>
+
+    <div class="backup-cards">
+      <div class="backup-card">
+        <div class="backup-icon">📤</div>
+        <div class="backup-info">
+          <strong>Xuất JSON</strong>
+          <span>Tải file backup về máy</span>
+        </div>
+        <button class="backup-action-btn export-btn" onclick="exportWords()">Xuất</button>
+      </div>
+      <div class="backup-card">
+        <div class="backup-icon">📥</div>
+        <div class="backup-info">
+          <strong>Nhập từ file</strong>
+          <span>Chọn file JSON để nhập</span>
+        </div>
+        <button class="backup-action-btn import-btn" onclick="importWords()">Nhập</button>
+      </div>
+      <div class="backup-card">
+        <div class="backup-icon">📋</div>
+        <div class="backup-info">
+          <strong>Dán JSON thủ công</strong>
+          <span>Copy-paste trực tiếp</span>
+        </div>
+        <button class="backup-action-btn paste-btn" onclick="showJsonPasteBox()">Dán</button>
+      </div>
+    </div>
+
+    <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImportFile(event)">
+
+    <div class="json-format-hint">
+      <p>📌 Định dạng JSON hợp lệ:</p>
+      <code>[{"word":"hello","meaning":"xin chào","type":"Thán từ"}]</code>
+    </div>
+  </div>
+
+</div><!-- end app-wrapper -->
+
+<!-- ===== GLOBAL OVERLAYS ===== -->
 
 <!-- Message Box -->
 <div id="msgbox" class="msgbox hidden"></div>
 
-<!-- Popup Credit -->
-<div id="credit-popup" class="credit-popup hidden">
-    <div class="credit-content">
-        <h2>From ETO CLUB WITH LOVE</h2>
-        <a class="credit-fb" href="https://www.facebook.com/luongdtx64" target="_blank">
-            <i class="fa-brands fa-facebook"></i> Facebook
-        </a>
-        <p>Mọi ý kiến đóng góp hay báo cáo lỗi xin gửi về gmail bên dưới</p>
-        <p class="credit-gmail">luongdtx64@gmail.com</p>
-        <button class="btn-credit">Đóng</button>
-    </div>
+<!-- Credit Popup -->
+<div id="credit-popup" class="overlay hidden">
+  <div class="overlay-card credit-card">
+    <div class="credit-heart">💖</div>
+    <h2>ETO CLUB</h2>
+    <p class="credit-sub">Made with love for learners</p>
+    <a class="credit-fb" href="https://www.facebook.com/luongdtx64" target="_blank">
+      Facebook · Luong ETO
+    </a>
+    <p class="credit-email">luongdtx64@gmail.com</p>
+    <p style="font-size:13px;color:#aaa;margin-top:4px">Ý kiến đóng góp & báo lỗi</p>
+    <button class="primary-btn" id="close-credit-btn">Đóng</button>
+  </div>
 </div>
 
-<!-- ====== Popup Dán JSON thủ công ====== -->
-<div id="json-paste-popup" class="credit-popup hidden">
-    <div class="credit-content" style="max-width:480px; width:92%;">
-        <h2 style="font-size:18px;">📋 Dán JSON thủ công</h2>
-        <p style="font-size:13px; color:#888; margin-bottom:10px;">
-            Dán mảng JSON vào đây. Định dạng:<br>
-            <code style="font-size:12px; color:#ff4b81;">[{"word":"...","meaning":"...","type":"..."}]</code>
-        </p>
-        <textarea id="json-textarea"
-            placeholder='[{"word":"hello","meaning":"xin chào","type":"Thán từ"}]'
-            style="width:100%;height:180px;padding:10px;border-radius:12px;border:1px solid #ffb3c6;
-                   font-size:13px;font-family:monospace;resize:vertical;box-sizing:border-box;">
-        </textarea>
-        <div style="display:flex;gap:10px;margin-top:12px;">
-            <button class="main-btn btn-import" style="flex:1;margin:0;" onclick="submitJsonPaste()">
-                ✅ Nhập
-            </button>
-            <button class="main-btn" style="flex:1;margin:0;" onclick="closeJsonPasteBox()">
-                ✖ Huỷ
-            </button>
-        </div>
+<!-- JSON Paste Popup -->
+<div id="json-paste-popup" class="overlay hidden">
+  <div class="overlay-card">
+    <h2>📋 Dán JSON thủ công</h2>
+    <textarea id="json-textarea" placeholder='[{"word":"hello","meaning":"xin chào","type":"Thán từ"}]'></textarea>
+    <div class="overlay-actions">
+      <button class="primary-btn" onclick="submitJsonPaste()">✅ Nhập</button>
+      <button class="secondary-btn" onclick="closeJsonPasteBox()">Huỷ</button>
     </div>
+  </div>
 </div>
-<!-- ======================================= -->
 
 <script src="scripts.js"></script>
 </body>
