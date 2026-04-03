@@ -51,7 +51,7 @@
       <button class="menu-card card-review" onclick="showScreen('review-screen')">
         <div class="card-icon">🃏</div>
         <div class="card-label">Ôn tập</div>
-        <div class="card-desc">Flashcard & kiểm tra</div>
+        <div class="card-desc">EN→VI & VI→EN</div>
       </button>
       <button class="menu-card card-list" onclick="showScreen('list-screen')">
         <div class="card-icon">📖</div>
@@ -131,18 +131,24 @@
       <button class="primary-btn" onclick="showScreen('add-screen')">Thêm từ ngay</button>
     </div>
 
+    <!-- Mode selector -->
+    <div class="review-mode-selector" id="review-mode-selector">
+      <button class="review-mode-btn active" data-mode="en-vi" onclick="setReviewMode('en-vi')">🇬🇧 EN → VI</button>
+      <button class="review-mode-btn" data-mode="vi-en" onclick="setReviewMode('vi-en')">🇻🇳 VI → EN</button>
+    </div>
+
     <div id="review-content">
       <!-- Flashcard flip -->
       <div class="flip-card-container" id="flip-card-container" onclick="flipCard()">
         <div class="flip-card" id="flip-card">
           <div class="flip-front">
-            <div class="card-hint">Nhấn để xem nghĩa 👆</div>
+            <div class="card-hint" id="card-hint-front">Nhấn để xem nghĩa 👆</div>
             <div class="card-word" id="review-word">—</div>
             <div class="card-type-badge" id="review-type-front">—</div>
             <button class="tts-card-btn" onclick="event.stopPropagation(); speakCurrentWord()" title="Phát âm">🔊</button>
           </div>
           <div class="flip-back">
-            <div class="card-hint">Nghĩa của từ</div>
+            <div class="card-hint" id="card-hint-back">Nghĩa của từ</div>
             <div class="card-meaning" id="review-meaning-back">—</div>
             <div class="card-type-badge" id="review-type-back">—</div>
           </div>
@@ -151,7 +157,7 @@
 
       <!-- Input answer -->
       <div class="answer-box" id="answer-box">
-        <input type="text" id="user-meaning" placeholder="Nhập nghĩa tiếng Việt..." autocomplete="off">
+        <input type="text" id="user-meaning" placeholder="Nhập nghĩa tiếng Việt..." autocomplete="off" spellcheck="false">
         <div class="answer-actions">
           <button class="primary-btn" id="check-btn" onclick="checkUserMeaning()">Kiểm tra ✓</button>
           <button class="skip-btn" id="skip-btn" onclick="skipWord()">Bỏ qua →</button>

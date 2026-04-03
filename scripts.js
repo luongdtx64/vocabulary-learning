@@ -16,6 +16,7 @@ let filterType = "Tất cả";
 
 let wrongWords = [];
 let isWrongWordsMode = false;
+let reviewMode = "en-vi"; // "en-vi" = nhìn EN nhập VI, "vi-en" = nhìn VI nhập EN
 
 /* ==============================================
    MEMES
@@ -249,6 +250,13 @@ function saveWord(word, meaning, type) {
 /* ==============================================
    REVIEW
 ============================================== */
+function setReviewMode(mode) {
+  reviewMode = mode;
+  document.querySelectorAll(".review-mode-btn").forEach(function(btn) {
+    btn.classList.toggle("active", btn.dataset.mode === mode);
+  });
+}
+
 function startReview() {
   sessionTotal = 0;
   sessionCorrect = 0;
@@ -324,10 +332,28 @@ function showNextWord() {
   reviewQueue.splice(idx, 1);
   updateProgress();
 
-  document.getElementById("review-word").textContent = currentWord.word;
-  document.getElementById("review-type-front").textContent = currentWord.type;
-  document.getElementById("review-meaning-back").textContent = currentWord.meaning;
-  document.getElementById("review-type-back").textContent = currentWord.type;
+  if (reviewMode === "vi-en") {
+    // Show Vietnamese on front, user must type English
+    document.getElementById("review-word").textContent = currentWord.meaning;
+    document.getElementById("review-type-front").textContent = currentWord.type;
+    document.getElementById("review-meaning-back").textContent = currentWord.word;
+    document.getElementById("review-type-back").textContent = currentWord.type;
+    document.getElementById("user-meaning").placeholder = "Nhập từ tiếng Anh...";
+    document.getElementById("card-hint-front").textContent = "Nhấn để xem từ tiếng Anh 👆";
+    document.getElementById("card-hint-back").textContent = "Từ tiếng Anh";
+    // Hide TTS button since we're showing Vietnamese
+    document.querySelector(".tts-card-btn").style.display = "none";
+  } else {
+    // Show English on front, user must type Vietnamese  
+    document.getElementById("review-word").textContent = currentWord.word;
+    document.getElementById("review-type-front").textContent = currentWord.type;
+    document.getElementById("review-meaning-back").textContent = currentWord.meaning;
+    document.getElementById("review-type-back").textContent = currentWord.type;
+    document.getElementById("user-meaning").placeholder = "Nhập nghĩa tiếng Việt...";
+    document.getElementById("card-hint-front").textContent = "Nhấn để xem nghĩa 👆";
+    document.getElementById("card-hint-back").textContent = "Nghĩa của từ";
+    document.querySelector(".tts-card-btn").style.display = "";
+  }
 
   const input = document.getElementById("user-meaning");
   input.value = "";
@@ -336,7 +362,9 @@ function showNextWord() {
 
 function checkUserMeaning() {
   const userInput = document.getElementById("user-meaning").value.trim().toLowerCase();
-  const correct = currentWord.meaning.trim().toLowerCase();
+  const correct = reviewMode === "vi-en" 
+    ? currentWord.word.trim().toLowerCase() 
+    : currentWord.meaning.trim().toLowerCase();
 
   if (!userInput) { showMsg("Bạn chưa nhập nghĩa!"); return; }
 
@@ -359,7 +387,7 @@ function checkUserMeaning() {
   if (isCorrect) {
     sessionCorrect++;
     const meme = correctMemes[Math.floor(Math.random() * correctMemes.length)];
-    document.getElementById("result-icon").textContent = meme.emoji;
+    document.getElementById("result-icon").innerHTML = '<img src="' + meme.gif + '" alt="meme" class="result-meme-gif">';
     document.getElementById("result-text").innerHTML =
       '<span class="result-correct-label">Chính xác!</span>' +
       '<span class="result-meme-text">' + meme.text + '</span>';
@@ -372,10 +400,11 @@ function checkUserMeaning() {
     }
   } else {
     const meme = wrongMemes[Math.floor(Math.random() * wrongMemes.length)];
-    document.getElementById("result-icon").textContent = meme.emoji;
+    const correctAnswer = reviewMode === "vi-en" ? currentWord.word : currentWord.meaning;
+    document.getElementById("result-icon").innerHTML = '<img src="' + meme.gif + '" alt="meme" class="result-meme-gif">';
     document.getElementById("result-text").innerHTML =
       '<span class="result-wrong-label">Sai rồi! Đáp án:</span>' +
-      '<strong class="result-answer">' + currentWord.meaning + '</strong>' +
+      '<strong class="result-answer">' + correctAnswer + '</strong>' +
       '<span class="result-meme-text">' + meme.text + '</span>';
     resultBox.className = "result-box result-wrong";
 
@@ -392,10 +421,10 @@ function skipWord() {
   document.getElementById("answer-box").style.display = "none";
   const resultBox = document.getElementById("result-box");
   resultBox.classList.remove("hidden");
-  document.getElementById("result-icon").textContent = "⏭️";
+  document.getElementById("result-icon").innerHTML = "⏭️";
   document.getElementById("result-text").innerHTML =
     '<span class="result-skip-label">Đã bỏ qua</span>' +
-    '<strong class="result-answer">' + currentWord.meaning + '</strong>';
+    '<strong class="result-answer">' + (reviewMode === "vi-en" ? currentWord.word : currentWord.meaning) + '</strong>';
   resultBox.className = "result-box result-skip";
 
   if (!isFlipped) {
