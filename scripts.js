@@ -21,31 +21,30 @@ let isWrongWordsMode = false;
    MEMES
 ============================================== */
 const correctMemes = [
-  { emoji: "🐐", text: "GOAT detected!" },
-  { emoji: "🔥", text: "Bạn đang cháy lắm!" },
-  { emoji: "💅", text: "Quá ez cho bạn!" },
-  { emoji: "🧠", text: "Big brain moment!" },
-  { emoji: "⚡", text: "ZINGGG! Chính xác!" },
-  { emoji: "🎯", text: "Bullseye! Chuẩn không cần chỉnh!" },
-  { emoji: "👑", text: "King/Queen behavior!" },
-  { emoji: "🚀", text: "To the moon! Đúng rồi!" },
-  { emoji: "😎", text: "Smooth as butter!" },
-  { emoji: "🦁", text: "Vocabulary beast mode!" },
+  { gif: "https://media.tenor.com/5F2BovYyscYAAAAC/cat-meme.gif",        text: "GOAT detected!" },
+  { gif: "https://media.tenor.com/x8v1oNUOmg4AAAAC/rickroll.gif",        text: "Bạn đang cháy lắm!" },
+  { gif: "https://media.tenor.com/ZEJbhMcWai8AAAAC/spongebob-rainbow.gif", text: "Quá ez cho bạn!" },
+  { gif: "https://media.tenor.com/3jAoXCZMsrAAAAAC/big-brain.gif",       text: "Big brain moment!" },
+  { gif: "https://media.tenor.com/Ij3FHnfhGvEAAAAC/john-cena-you-cant-see-me.gif", text: "ZINGGG! Chính xác!" },
+  { gif: "https://media.tenor.com/1136571inNEAAAAC/yay.gif",              text: "Bullseye!" },
+  { gif: "https://media.tenor.com/Mr_loolSSh8AAAAC/leo-dicaprio.gif",    text: "King/Queen behavior!" },
+  { gif: "https://media.tenor.com/i0X9cVtnLGUAAAAC/to-the-moon.gif",    text: "To the moon!" },
+  { gif: "https://media.tenor.com/RPFqZAooxhcAAAAC/shrek-sunglasses.gif", text: "Smooth as butter!" },
+  { gif: "https://media.tenor.com/0PuCmqnFb7YAAAAC/crying-cat.gif",      text: "Vocabulary beast mode!" },
 ];
 
 const wrongMemes = [
-  { emoji: "💀", text: "Skill issue detected!" },
-  { emoji: "🤡", text: "L + Ratio + Sai rồi!" },
-  { emoji: "😭", text: "Ối giời ơi... sai bét!" },
-  { emoji: "🗿", text: "Bruh moment..." },
-  { emoji: "🫠", text: "Tan chảy vì sai quá!" },
-  { emoji: "📉", text: "Stats dropped!" },
-  { emoji: "🐢", text: "Chậm mà không chắc!" },
-  { emoji: "😅", text: "Ủa... không phải vậy đâu!" },
-  { emoji: "🤦", text: "Facepalm worthy..." },
-  { emoji: "🦆", text: "Quack! Sai toét!" },
+  { gif: "https://media.tenor.com/wnBgdkFvgAkAAAAC/skill-issue.gif",     text: "Skill issue detected!" },
+  { gif: "https://media.tenor.com/jilBmQD-UhcAAAAC/l-plus-ratio.gif",   text: "L + Ratio + Sai rồi!" },
+  { gif: "https://media.tenor.com/hzCuxPTiVFIAAAAC/cry-crying.gif",     text: "Ối giời ơi... sai bét!" },
+  { gif: "https://media.tenor.com/nFSxqSHHDkUAAAAC/bruh.gif",           text: "Bruh moment..." },
+  { gif: "https://media.tenor.com/cH3OZG7JziUAAAAC/melting-face.gif",   text: "Tan chảy vì sai quá!" },
+  { gif: "https://media.tenor.com/gGAHHbV1CgQAAAAC/stonks-not-stonks.gif", text: "Stats dropped!" },
+  { gif: "https://media.tenor.com/6m6HcqXwlhsAAAAC/turtle.gif",         text: "Chậm mà không chắc!" },
+  { gif: "https://media.tenor.com/WT7cGpMQMF0AAAAC/surprised-pikachu.gif", text: "Ủa... không phải vậy đâu!" },
+  { gif: "https://media.tenor.com/vqRIOEDlRQgAAAAC/facepalm.gif",       text: "Facepalm worthy..." },
+  { gif: "https://media.tenor.com/GkDJMBcnGOQAAAAC/duck-quack.gif",     text: "Quack! Sai toét!" },
 ];
-
 /* ==============================================
    INIT
 ============================================== */
