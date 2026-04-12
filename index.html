@@ -55,13 +55,23 @@
       </button>
       <button class="menu-card card-list" onclick="showScreen('list-screen')">
         <div class="card-icon">📖</div>
-        <div class="card-label">Từ điển</div>
+        <div class="card-label">Từ vựng của tôi</div>
         <div class="card-desc">Xem & quản lý từ</div>
       </button>
       <button class="menu-card card-backup" onclick="showScreen('backup-screen')">
         <div class="card-icon">💾</div>
         <div class="card-label">Sao lưu</div>
         <div class="card-desc">Import / Export</div>
+      </button>
+      <button class="menu-card card-lookup" onclick="showScreen('lookup-screen')">
+        <div class="card-icon">🔎</div>
+        <div class="card-label">Tra từ</div>
+        <div class="card-desc">Từ điển Anh-Việt</div>
+      </button>
+      <button class="menu-card card-game" onclick="showScreen('game-screen')">
+        <div class="card-icon">🐱</div>
+        <div class="card-label">Mini Game</div>
+        <div class="card-desc">Mèo vượt chướng ngại</div>
       </button>
     </div>
 
@@ -72,7 +82,7 @@
       <span class="wrong-count-badge" id="wrong-count-badge">0</span>
     </button>
 
-    <button class="credit-link" id="credit-btn">Made with 💖 · Credit</button>
+    <button class="credit-link" id="credit-btn">Made by Lương ETO 💖 · Credit</button>
   </div>
 
   <!-- ===== ADD SCREEN ===== -->
@@ -250,6 +260,99 @@
     <div class="json-format-hint">
       <p>📌 Định dạng JSON hợp lệ:</p>
       <code>[{"word":"hello","meaning":"xin chào","type":"Thán từ"}]</code>
+    </div>
+  </div>
+
+  <!-- ===== LOOKUP / DICTIONARY SCREEN ===== -->
+  <div id="lookup-screen" class="screen">
+    <div class="screen-header">
+      <button class="back-icon-btn" onclick="showScreen('menu-screen')">←</button>
+      <h2>Tra từ điển</h2>
+    </div>
+
+    <div class="lookup-search-row">
+      <input type="text" id="lookup-input" class="lookup-input-field" placeholder="Nhập từ tiếng Anh..." autocomplete="off" spellcheck="false">
+      <button class="lookup-btn" onclick="lookupWord()" id="lookup-btn">🔍 Tra</button>
+    </div>
+
+    <div id="lookup-result-area"></div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="game-screen" class="screen game-screen-fullmode">
+    <div class="screen-header game-header">
+      <button class="back-icon-btn" onclick="exitGame()">←</button>
+      <h2>🐱 Mini Game</h2>
+      <div class="game-hs-badge">
+        🏆 <span id="game-hs-display">0</span>
+      </div>
+    </div>
+
+    <!-- Floating HUD (top of canvas) -->
+    <div class="game-hud-float" id="game-hud-float">
+      <div class="game-hud-item">
+        <span class="hud-icon">⭐</span>
+        <span class="hud-val" id="game-score-display">0</span>
+      </div>
+      <div class="game-hud-item">
+        <span class="hud-icon">⚡</span>
+        <span class="hud-val" id="game-speed-display">x1.0</span>
+      </div>
+      <div class="game-hud-item hud-shield-item" id="hud-shield-item">
+        <span class="hud-icon">🛡️</span>
+        <span class="hud-val" id="game-shield-display">—</span>
+      </div>
+    </div>
+
+    <div id="game-canvas-box">
+      <canvas id="game-canvas" width="800" height="420"></canvas>
+
+      <!-- Overlay start/gameover -->
+      <div id="game-overlay">
+        <div class="game-ov-inner">
+          <div class="game-ov-emoji" id="gov-emoji">🐱</div>
+          <div class="game-ov-title" id="gov-title">Mèo Vượt Chướng Ngại</div>
+          <div class="game-ov-sub" id="gov-sub">Nhấn Space hoặc nút Nhảy để bắt đầu</div>
+          <div class="game-ov-score" id="gov-score" style="display:none">0 điểm</div>
+          <div class="game-ov-hs" id="gov-hs" style="display:none"></div>
+          <div class="game-ov-buttons">
+            <button class="game-start-btn" id="game-start-btn">
+              <span class="btn-icon">▶</span> Bắt đầu!
+            </button>
+            <button class="game-restart-btn" id="game-restart-btn" style="display:none" onclick="startGame()">
+              🔄 Chơi lại
+            </button>
+            <button class="game-menu-btn" id="game-menu-btn" style="display:none" onclick="exitGame()">
+              🏠 Menu
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vocab power-up quiz overlay -->
+      <div id="game-vocab-overlay" style="display:none">
+        <div class="game-vocab-inner">
+          <div class="game-vocab-label">⚡ POWER-UP TỪ VỰNG</div>
+          <div class="game-vocab-word" id="gv-word">—</div>
+          <div class="game-vocab-hint" id="gv-hint"></div>
+          <div class="game-vocab-choices" id="gv-choices"></div>
+          <div class="game-vocab-timer-bar"><div class="game-vocab-timer-fill" id="gv-timer-fill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="game-controls">
+      <button class="game-jump-btn" id="game-jump-btn" ontouchstart="event.preventDefault();gameJump()" onclick="gameJump()">
+        <span class="jump-arrow">↑</span> Nhảy
+      </button>
+      <button class="game-power-btn" id="game-power-btn" onclick="activatePowerUp()">
+        ⚡ Từ vựng
+      </button>
+    </div>
+
+    <div class="game-tip">
+      <span>⌨️ Space / Click để nhảy &nbsp;·&nbsp; Double jump được! &nbsp;·&nbsp; ⚡ trả lời đúng → nhận buff</span>
     </div>
   </div>
 
