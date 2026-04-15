@@ -1560,7 +1560,10 @@ function endGame() {
 
 // ---- Event bindings ----
 document.addEventListener('keydown', function(e) {
-  if (e.code==='Space' || e.code==='ArrowUp' && document.getElementById('game-screen').classList.contains('active')) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  const gameActive = document.getElementById('game-screen').classList.contains('active');
+  if ((e.code === 'Space' || e.code === 'ArrowUp') && gameActive) {
     e.preventDefault();
     if (gState === 'dead') { startGame(); return; }
     window.gameJump();
