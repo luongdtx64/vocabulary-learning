@@ -22,29 +22,15 @@ let reviewMode = "en-vi"; // "en-vi" = nhìn EN nhập VI, "vi-en" = nhìn VI nh
    MEMES
 ============================================== */
 const correctMemes = [
-  { gif: "https://media.tenor.com/5F2BovYyscYAAAAC/cat-meme.gif",        text: "GOAT detected!" },
-  { gif: "https://media.tenor.com/x8v1oNUOmg4AAAAC/rickroll.gif",        text: "Bạn đang cháy lắm!" },
-  { gif: "https://media.tenor.com/ZEJbhMcWai8AAAAC/spongebob-rainbow.gif", text: "Quá ez cho bạn!" },
-  { gif: "https://media.tenor.com/3jAoXCZMsrAAAAAC/big-brain.gif",       text: "Big brain moment!" },
-  { gif: "https://media.tenor.com/Ij3FHnfhGvEAAAAC/john-cena-you-cant-see-me.gif", text: "ZINGGG! Chính xác!" },
-  { gif: "https://media.tenor.com/1136571inNEAAAAC/yay.gif",              text: "Bullseye!" },
-  { gif: "https://media.tenor.com/Mr_loolSSh8AAAAC/leo-dicaprio.gif",    text: "King/Queen behavior!" },
-  { gif: "https://media.tenor.com/i0X9cVtnLGUAAAAC/to-the-moon.gif",    text: "To the moon!" },
-  { gif: "https://media.tenor.com/RPFqZAooxhcAAAAC/shrek-sunglasses.gif", text: "Smooth as butter!" },
-  { gif: "https://media.tenor.com/0PuCmqnFb7YAAAAC/crying-cat.gif",      text: "Vocabulary beast mode!" },
+  { gif: "https://media1.tenor.com/m/w87VFXy_KzEAAAAC/omg-shocked.gif",        text: "Đẳng cấp đấy!" },
+  { gif: "https://media1.tenor.com/m/RusIdB6WS-IAAAAC/cat-high-five.gif",        text: "Vip pro đấy" } ,
+  { gif: "https://media1.tenor.com/m/Kq_bAI7JRDkAAAAd/byuntear-cat.gif",        text: "Giỏi đấy" } 
 ];
 
 const wrongMemes = [
-  { gif: "https://media.tenor.com/wnBgdkFvgAkAAAAC/skill-issue.gif",     text: "Skill issue detected!" },
-  { gif: "https://media.tenor.com/jilBmQD-UhcAAAAC/l-plus-ratio.gif",   text: "L + Ratio + Sai rồi!" },
-  { gif: "https://media.tenor.com/hzCuxPTiVFIAAAAC/cry-crying.gif",     text: "Ối giời ơi... sai bét!" },
-  { gif: "https://media.tenor.com/nFSxqSHHDkUAAAAC/bruh.gif",           text: "Bruh moment..." },
-  { gif: "https://media.tenor.com/cH3OZG7JziUAAAAC/melting-face.gif",   text: "Tan chảy vì sai quá!" },
-  { gif: "https://media.tenor.com/gGAHHbV1CgQAAAAC/stonks-not-stonks.gif", text: "Stats dropped!" },
-  { gif: "https://media.tenor.com/6m6HcqXwlhsAAAAC/turtle.gif",         text: "Chậm mà không chắc!" },
-  { gif: "https://media.tenor.com/WT7cGpMQMF0AAAAC/surprised-pikachu.gif", text: "Ủa... không phải vậy đâu!" },
-  { gif: "https://media.tenor.com/vqRIOEDlRQgAAAAC/facepalm.gif",       text: "Facepalm worthy..." },
-  { gif: "https://media.tenor.com/GkDJMBcnGOQAAAAC/duck-quack.gif",     text: "Quack! Sai toét!" },
+  { gif: "https://media1.tenor.com/m/tuzl1hVGlIQAAAAC/sad-cat-sad-cat-meme.gif",        text: "Saii òiiii" } ,
+  { gif: "https://media1.tenor.com/m/aJeIvS0AuHcAAAAC/cat1.gif",        text: "Vấn đề kĩ năng ?" } ,
+  { gif: "https://media.tenor.com/c6nXyQmertAAAAAi/the-voices.gif",        text: "Hết Cíuuuuu" } 
 ];
 /* ==============================================
    INIT
