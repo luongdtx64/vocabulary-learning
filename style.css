@@ -787,6 +787,20 @@ body {
   text-align: center;
 }
 
+/* Recent words button (blue variant) */
+.recent-words-btn {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 2px solid #93c5fd;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.2);
+  margin-top: 10px;
+}
+.recent-words-btn:hover {
+  box-shadow: 0 6px 20px rgba(59,130,246,0.3);
+  border-color: #3b82f6;
+}
+.recent-words-btn .wrong-words-label { color: #1d4ed8; }
+.recent-words-btn .recent-count-badge { background: #3b82f6; }
+
 /* =============================================
    PRACTICE WRONG BTN (Session complete)
 ============================================= */

@@ -16,6 +16,8 @@ let filterType = "Tất cả";
 
 let wrongWords = [];
 let isWrongWordsMode = false;
+let isRecentWordsMode = false;
+const RECENT_WORDS_COUNT = 50;
 let reviewMode = "en-vi"; // "en-vi" = nhìn EN nhập VI, "vi-en" = nhìn VI nhập EN
 
 /* ==============================================
@@ -40,6 +42,7 @@ function init() {
   updateHeaderStats();
   setupTypePills();
   loadWrongWords();
+  updateRecentWordsBtn();
 }
 
 function loadWrongWords() {
@@ -93,6 +96,36 @@ function bumpStreak() {
 
 function updateHeaderStats() {
   document.getElementById("total-words-display").textContent = words.length;
+  updateRecentWordsBtn();
+}
+
+function updateRecentWordsBtn() {
+  const btn = document.getElementById("recent-words-btn");
+  if (!btn) return;
+  if (words.length > 0) {
+    btn.style.display = "flex";
+    document.getElementById("recent-count-badge").textContent = Math.min(RECENT_WORDS_COUNT, words.length);
+  } else {
+    btn.style.display = "none";
+  }
+}
+
+function getRecentWords() {
+  // Words are appended in the order they were added, so the most
+  // recently added ones are at the end of the array.
+  return words.slice(-RECENT_WORDS_COUNT);
+}
+
+function startRecentWordsReview() {
+  if (words.length === 0) {
+    showMsg("Bạn chưa có từ nào để luyện!");
+    return;
+  }
+  isRecentWordsMode = true;
+  isWrongWordsMode = false;
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("review-screen").classList.add("active");
+  startReview();
 }
 
 function setupTypePills() {
@@ -113,6 +146,7 @@ function showScreen(id) {
   document.getElementById(id).classList.add("active");
   if (id === "review-screen") {
     isWrongWordsMode = false;
+    isRecentWordsMode = false;
     startReview();
   }
   if (id === "list-screen") renderWordList();
@@ -258,11 +292,11 @@ function startReview() {
   sessionCorrect = 0;
   sessionSkipped = 0;
 
-  const sourceWords = isWrongWordsMode ? wrongWords : words;
+  const sourceWords = isWrongWordsMode ? wrongWords : (isRecentWordsMode ? getRecentWords() : words);
 
   const reviewTitle = document.querySelector("#review-screen .screen-header h2");
   if (reviewTitle) {
-    reviewTitle.textContent = isWrongWordsMode ? "Luyện từ sai" : "Ôn tập";
+    reviewTitle.textContent = isWrongWordsMode ? "Luyện từ sai" : (isRecentWordsMode ? "50 từ mới nhất" : "Ôn tập");
   }
 
   document.getElementById("session-complete").style.display = "none";
@@ -645,10 +679,13 @@ async function lookupWord() {
   lookupCurrentWord = null;
 
   try {
-    // Call both APIs in parallel
-    const [dictRes, transRes] = await Promise.all([
+    // Call dictionary + translation APIs in parallel.
+    // translateToVi() has its own internal fallback chain so it
+    // never rejects the outer Promise.all if a translation
+    // provider is down / rate-limited / expired.
+    const [dictRes, viMeaning] = await Promise.all([
       fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word)),
-      fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(word) + "&langpair=en|vi")
+      translateToVi(word)
     ]);
 
     if (!dictRes.ok) {
@@ -657,18 +694,42 @@ async function lookupWord() {
     }
 
     const dictData = await dictRes.json();
-    let viMeaning = "";
-    try {
-      const transData = await transRes.json();
-      if (transData.responseStatus === 200) {
-        viMeaning = transData.responseData.translatedText || "";
-      }
-    } catch(e) {}
-
     renderLookupResult(dictData[0], viMeaning);
   } catch (e) {
     area.innerHTML = '<div class="lookup-not-found"><div class="empty-icon">📡</div><p>Lỗi kết nối mạng.<br>Vui lòng thử lại!</p></div>';
   }
+}
+
+/* Translate an English word to Vietnamese.
+   1) Google Translate's public (no-key) endpoint — fast, no daily quota issues.
+   2) MyMemory — fallback, but its free quota expires/resets daily so it's
+      no longer used as the primary source (this was the "hết hạn" bug). */
+async function translateToVi(word) {
+  // 1) Google Translate public endpoint
+  try {
+    const res = await fetch(
+      "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=" + encodeURIComponent(word)
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const text = data && data[0] ? data[0].map(chunk => chunk[0]).join("") : "";
+      if (text && text.trim()) return text.trim();
+    }
+  } catch (e) { /* fall through to backup */ }
+
+  // 2) MyMemory fallback (skip if quota/warning message is returned)
+  try {
+    const res2 = await fetch(
+      "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(word) + "&langpair=en|vi"
+    );
+    const data2 = await res2.json();
+    if (data2.responseStatus === 200) {
+      const text = data2.responseData.translatedText || "";
+      if (text && !/MYMEMORY WARNING|QUOTA/i.test(text)) return text;
+    }
+  } catch (e) { /* no fallback left */ }
+
+  return "";
 }
 
 const posMapVI = {
