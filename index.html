@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0A0E13">
 <title>ETO Club</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,57 +22,65 @@
   <!-- HEADER -->
   <header class="app-header">
     <div class="header-left">
-      <div class="logo">ETO CLUB</div>
+      <div class="logo">ETO Club</div>
     </div>
-    <div class="header-stats">
-      <div class="stat-pill" id="word-count-pill">
-        <span class="stat-icon">📚</span>
-        <span id="total-words-display">0</span> từ
-      </div>
-      <div class="stat-pill streak-pill" id="streak-pill">
-        <span class="stat-icon">🔥</span>
-        <span id="streak-display">0</span> ngày
-      </div>
+    <div class="header-stats" id="header-stats">
+      <span class="stat-chip" id="word-count-pill">📚 <b id="total-words-display">0</b></span>
+      <span class="stat-chip stat-chip-streak" id="streak-pill">🔥 <b id="streak-display">0</b></span>
     </div>
   </header>
 
   <!-- ===== MENU SCREEN ===== -->
   <div id="menu-screen" class="screen active">
-    <div class="hero-section">
-      <h1 class="hero-title">Học từ vựng<br><span class="hero-accent">thật dễ thương</span> 💕</h1>
-      <p class="hero-sub">A present from <strong>Luong ETO</strong></p>
+    <div class="greeting-block">
+      <h1 class="greeting-title">Chào bạn 👋</h1>
+      <p class="greeting-sub">Học từ vựng <span class="hero-accent">thật dễ thương</span> 💕 — món quà từ <strong>Luong ETO</strong></p>
     </div>
 
-    <div class="menu-grid">
-      <button class="menu-card card-add" onclick="showScreen('add-screen')">
-        <div class="card-icon">✏️</div>
-        <div class="card-label">Thêm từ</div>
-        <div class="card-desc">Thêm từ vựng mới</div>
+    <div class="stat-widgets">
+      <div class="stat-widget">
+        <span class="stat-widget-icon">📚</span>
+        <span class="stat-widget-value" id="stat-widget-words">0</span>
+        <span class="stat-widget-label">từ đã học</span>
+      </div>
+      <div class="stat-widget stat-widget-gold">
+        <span class="stat-widget-icon">🔥</span>
+        <span class="stat-widget-value" id="stat-widget-streak">0</span>
+        <span class="stat-widget-label">ngày liên tiếp</span>
+      </div>
+    </div>
+
+    <div class="app-list-card">
+      <button class="app-row card-review" onclick="showScreen('review-screen')">
+        <span class="app-row-icon">🃏</span>
+        <span class="app-row-text"><span class="app-row-label">Ôn tập từ vựng</span><span class="app-row-desc">EN→VI & VI→EN</span></span>
+        <span class="app-row-chevron">›</span>
       </button>
-      <button class="menu-card card-review" onclick="showScreen('review-screen')">
-        <div class="card-icon">🃏</div>
-        <div class="card-label">Ôn tập</div>
-        <div class="card-desc">EN→VI & VI→EN</div>
+      <button class="app-row card-list" onclick="showScreen('list-screen')">
+        <span class="app-row-icon">📖</span>
+        <span class="app-row-text"><span class="app-row-label">Từ vựng của tôi</span><span class="app-row-desc">Xem & quản lý từ</span></span>
+        <span class="app-row-chevron">›</span>
       </button>
-      <button class="menu-card card-list" onclick="showScreen('list-screen')">
-        <div class="card-icon">📖</div>
-        <div class="card-label">Từ vựng của tôi</div>
-        <div class="card-desc">Xem & quản lý từ</div>
+      <button class="app-row card-lookup" onclick="showScreen('lookup-screen')">
+        <span class="app-row-icon">🔎</span>
+        <span class="app-row-text"><span class="app-row-label">Tra từ điển</span><span class="app-row-desc">Từ điển Anh-Việt</span></span>
+        <span class="app-row-chevron">›</span>
       </button>
-      <button class="menu-card card-backup" onclick="showScreen('backup-screen')">
-        <div class="card-icon">💾</div>
-        <div class="card-label">Sao lưu</div>
-        <div class="card-desc">Import / Export</div>
+    </div>
+
+    <div class="section-title">Khám phá thêm</div>
+    <div class="app-icon-grid">
+      <button class="app-icon-tile" onclick="setReviewMode('dictation'); showScreen('review-screen')">
+        <span class="app-icon-box card-dictation">🎧</span>
+        <span class="app-icon-label">Nghe chép</span>
       </button>
-      <button class="menu-card card-lookup" onclick="showScreen('lookup-screen')">
-        <div class="card-icon">🔎</div>
-        <div class="card-label">Tra từ</div>
-        <div class="card-desc">Từ điển Anh-Việt</div>
+      <button class="app-icon-tile" onclick="showScreen('game-screen')">
+        <span class="app-icon-box card-game">🐱</span>
+        <span class="app-icon-label">Mini Game</span>
       </button>
-      <button class="menu-card card-game" onclick="showScreen('game-screen')">
-        <div class="card-icon">🐱</div>
-        <div class="card-label">Mini Game</div>
-        <div class="card-desc">Mèo vượt chướng ngại</div>
+      <button class="app-icon-tile" onclick="showScreen('backup-screen')">
+        <span class="app-icon-box card-backup">💾</span>
+        <span class="app-icon-label">Sao lưu</span>
       </button>
     </div>
 
@@ -152,6 +161,7 @@
     <div class="review-mode-selector" id="review-mode-selector">
       <button class="review-mode-btn active" data-mode="en-vi" onclick="setReviewMode('en-vi')">🇬🇧 EN → VI</button>
       <button class="review-mode-btn" data-mode="vi-en" onclick="setReviewMode('vi-en')">🇻🇳 VI → EN</button>
+      <button class="review-mode-btn" data-mode="dictation" onclick="setReviewMode('dictation')">🎧 Nghe chép</button>
     </div>
 
     <div id="review-content">
@@ -217,6 +227,8 @@
 
     <div class="filter-bar" id="filter-bar">
       <button class="filter-pill active" data-filter="Tất cả" onclick="setFilter(this)">Tất cả</button>
+      <button class="filter-pill" data-filter="⭐ Yêu thích" onclick="setFilter(this)">⭐ Yêu thích</button>
+      <button class="filter-pill" data-filter="❌ Hay sai" onclick="setFilter(this)">❌ Hay sai</button>
       <button class="filter-pill" data-filter="Danh từ" onclick="setFilter(this)">Danh từ</button>
       <button class="filter-pill" data-filter="Động từ" onclick="setFilter(this)">Động từ</button>
       <button class="filter-pill" data-filter="Tính từ" onclick="setFilter(this)">Tính từ</button>
@@ -364,6 +376,25 @@
   </div>
 
 </div><!-- end app-wrapper -->
+
+<!-- BOTTOM TAB BAR (native app style) -->
+<nav class="tab-bar" id="tab-bar">
+  <button class="tab-bar-btn active" id="tab-home" onclick="showScreen('menu-screen')">
+    <span class="tab-icon">🏠</span><span class="tab-label">Trang chủ</span>
+  </button>
+  <button class="tab-bar-btn" id="tab-review" onclick="showScreen('review-screen')">
+    <span class="tab-icon">🃏</span><span class="tab-label">Ôn tập</span>
+  </button>
+  <button class="tab-bar-btn tab-bar-fab" id="tab-add" onclick="showScreen('add-screen')">
+    <span class="tab-fab-circle">➕</span>
+  </button>
+  <button class="tab-bar-btn" id="tab-list" onclick="showScreen('list-screen')">
+    <span class="tab-icon">📖</span><span class="tab-label">Từ vựng</span>
+  </button>
+  <button class="tab-bar-btn" id="tab-lookup" onclick="showScreen('lookup-screen')">
+    <span class="tab-icon">🔎</span><span class="tab-label">Tra từ</span>
+  </button>
+</nav>
 
 <!-- ===== GLOBAL OVERLAYS ===== -->
 

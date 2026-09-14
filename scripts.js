@@ -15,6 +15,7 @@ let selectedType = "Danh từ";
 let filterType = "Tất cả";
 
 let wrongWords = [];
+let wrongCounts = {}; // { "word-lowercase": timesGottenWrong } — persists even after a word is cleared from wrongWords
 let isWrongWordsMode = false;
 let isRecentWordsMode = false;
 const RECENT_WORDS_COUNT = 50;
@@ -47,12 +48,25 @@ function init() {
 
 function loadWrongWords() {
   wrongWords = JSON.parse(localStorage.getItem("mochi_wrong_words") || "[]");
+  wrongCounts = JSON.parse(localStorage.getItem("mochi_wrong_counts") || "{}");
   updateWrongWordsBtn();
 }
 
 function saveWrongWords() {
   localStorage.setItem("mochi_wrong_words", JSON.stringify(wrongWords));
   updateWrongWordsBtn();
+}
+
+// "Từ hay sai" tracking: counts every time a word is answered wrong,
+// separate from wrongWords (which only tracks "still needs practice").
+function bumpWrongCount(word) {
+  const key = word.toLowerCase();
+  wrongCounts[key] = (wrongCounts[key] || 0) + 1;
+  localStorage.setItem("mochi_wrong_counts", JSON.stringify(wrongCounts));
+}
+
+function getWrongCount(word) {
+  return wrongCounts[word.toLowerCase()] || 0;
 }
 
 function updateWrongWordsBtn() {
@@ -75,6 +89,8 @@ function updateStreak() {
     localStorage.setItem("mochi_streak", "0");
   }
   document.getElementById("streak-display").textContent = streak;
+  const sw = document.getElementById("stat-widget-streak");
+  if (sw) sw.textContent = streak;
 }
 
 function bumpStreak() {
@@ -91,11 +107,15 @@ function bumpStreak() {
     localStorage.setItem("mochi_streak", streak.toString());
     localStorage.setItem("mochi_last_date", today);
     document.getElementById("streak-display").textContent = streak;
+    const sw2 = document.getElementById("stat-widget-streak");
+    if (sw2) sw2.textContent = streak;
   }
 }
 
 function updateHeaderStats() {
   document.getElementById("total-words-display").textContent = words.length;
+  const ww = document.getElementById("stat-widget-words");
+  if (ww) ww.textContent = words.length;
   updateRecentWordsBtn();
 }
 
@@ -144,6 +164,7 @@ function setupTypePills() {
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  updateTabBar(id);
   if (id === "review-screen") {
     isWrongWordsMode = false;
     isRecentWordsMode = false;
@@ -160,6 +181,26 @@ function showScreen(id) {
   if (id !== "game-screen") {
     pauseGameIfRunning();
   }
+}
+
+// Keep the bottom tab bar's highlighted icon in sync with the visible
+// screen, and hide the bar entirely while the full-screen game is open.
+const TAB_SCREEN_MAP = {
+  "menu-screen": "tab-home",
+  "review-screen": "tab-review",
+  "list-screen": "tab-list",
+  "lookup-screen": "tab-lookup",
+  "add-screen": "tab-add"
+};
+function updateTabBar(screenId) {
+  document.querySelectorAll(".tab-bar-btn").forEach(b => b.classList.remove("active"));
+  const tabId = TAB_SCREEN_MAP[screenId];
+  if (tabId) {
+    const btn = document.getElementById(tabId);
+    if (btn) btn.classList.add("active");
+  }
+  const tabBar = document.getElementById("tab-bar");
+  if (tabBar) tabBar.style.display = (screenId === "game-screen") ? "none" : "flex";
 }
 
 function startWrongWordsReview() {
@@ -268,7 +309,7 @@ async function addWord() {
 }
 
 function saveWord(word, meaning, type) {
-  words.push({ word, meaning, type });
+  words.push({ word, meaning, type, favorite: false });
   localStorage.setItem("mochi_words", JSON.stringify(words));
   updateHeaderStats();
   showMsg("Đã lưu từ!");
@@ -373,6 +414,18 @@ function showNextWord() {
     document.getElementById("card-hint-back").textContent = "Từ tiếng Anh";
     // Hide TTS button since we're showing Vietnamese
     document.querySelector(".tts-card-btn").style.display = "none";
+  } else if (reviewMode === "dictation") {
+    // Nghe & chép chính tả: don't show the word, just a speaker prompt.
+    // User must type the word after listening to it.
+    document.getElementById("review-word").textContent = "🔊";
+    document.getElementById("review-type-front").textContent = currentWord.type;
+    document.getElementById("review-meaning-back").textContent = currentWord.word;
+    document.getElementById("review-type-back").textContent = currentWord.meaning;
+    document.getElementById("user-meaning").placeholder = "Gõ từ bạn vừa nghe...";
+    document.getElementById("card-hint-front").textContent = "Nghe rồi gõ lại từ nhé 🎧";
+    document.getElementById("card-hint-back").textContent = "Đáp án";
+    document.querySelector(".tts-card-btn").style.display = "";
+    setTimeout(() => speakText(currentWord.word), 350);
   } else {
     // Show English on front, user must type Vietnamese  
     document.getElementById("review-word").textContent = currentWord.word;
@@ -392,11 +445,11 @@ function showNextWord() {
 
 function checkUserMeaning() {
   const userInput = document.getElementById("user-meaning").value.trim().toLowerCase();
-  const correct = reviewMode === "vi-en" 
-    ? currentWord.word.trim().toLowerCase() 
+  const correct = (reviewMode === "vi-en" || reviewMode === "dictation")
+    ? currentWord.word.trim().toLowerCase()
     : currentWord.meaning.trim().toLowerCase();
 
-  if (!userInput) { showMsg("Bạn chưa nhập nghĩa!"); return; }
+  if (!userInput) { showMsg(reviewMode === "dictation" ? "Bạn chưa gõ từ nghe được!" : "Bạn chưa nhập nghĩa!"); return; }
 
   document.getElementById("answer-box").style.display = "none";
 
@@ -412,7 +465,11 @@ function checkUserMeaning() {
   const resultBox = document.getElementById("result-box");
   resultBox.classList.remove("hidden");
 
-  const isCorrect = userInput === correct || correct.includes(userInput) || userInput.includes(correct);
+  // Dictation asks for exact spelling — no fuzzy substring matching,
+  // otherwise typos would be silently counted as correct.
+  const isCorrect = reviewMode === "dictation"
+    ? userInput === correct
+    : (userInput === correct || correct.includes(userInput) || userInput.includes(correct));
 
   if (isCorrect) {
     sessionCorrect++;
@@ -430,13 +487,14 @@ function checkUserMeaning() {
     }
   } else {
     const meme = wrongMemes[Math.floor(Math.random() * wrongMemes.length)];
-    const correctAnswer = reviewMode === "vi-en" ? currentWord.word : currentWord.meaning;
+    const correctAnswer = (reviewMode === "vi-en" || reviewMode === "dictation") ? currentWord.word : currentWord.meaning;
     document.getElementById("result-icon").innerHTML = '<img src="' + meme.gif + '" alt="meme" class="result-meme-gif">';
     document.getElementById("result-text").innerHTML =
       '<span class="result-wrong-label">Sai rồi! Đáp án:</span>' +
       '<strong class="result-answer">' + correctAnswer + '</strong>' +
       '<span class="result-meme-text">' + meme.text + '</span>';
     resultBox.className = "result-box result-wrong";
+    bumpWrongCount(currentWord.word);
 
     const alreadyWrong = wrongWords.some(function(w) { return w.word.toLowerCase() === currentWord.word.toLowerCase(); });
     if (!alreadyWrong) {
@@ -454,7 +512,7 @@ function skipWord() {
   document.getElementById("result-icon").innerHTML = "⏭️";
   document.getElementById("result-text").innerHTML =
     '<span class="result-skip-label">Đã bỏ qua</span>' +
-    '<strong class="result-answer">' + (reviewMode === "vi-en" ? currentWord.word : currentWord.meaning) + '</strong>';
+    '<strong class="result-answer">' + ((reviewMode === "vi-en" || reviewMode === "dictation") ? currentWord.word : currentWord.meaning) + '</strong>';
   resultBox.className = "result-box result-skip";
 
   if (!isFlipped) {
@@ -508,7 +566,11 @@ function renderWordList() {
 
   const filtered = words.filter(function(w) {
     const matchSearch = w.word.toLowerCase().includes(search) || w.meaning.toLowerCase().includes(search);
-    const matchType = filterType === "Tất cả" || w.type === filterType;
+    let matchType;
+    if (filterType === "Tất cả") matchType = true;
+    else if (filterType === "⭐ Yêu thích") matchType = !!w.favorite;
+    else if (filterType === "❌ Hay sai") matchType = getWrongCount(w.word) > 0;
+    else matchType = w.type === filterType;
     return matchSearch && matchType;
   });
 
@@ -521,11 +583,13 @@ function renderWordList() {
   filtered.forEach(function(w) {
     const realIdx = words.indexOf(w);
     const isWrong = wrongWords.some(function(ww) { return ww.word.toLowerCase() === w.word.toLowerCase(); });
+    const wrongCount = getWrongCount(w.word);
     const div = document.createElement("div");
     div.className = "word-item" + (isWrong ? " word-item-wrong" : "");
     div.innerHTML =
+      '<button class="word-star-btn' + (w.favorite ? ' active' : '') + '" onclick="toggleFavorite(' + realIdx + ')" title="Đánh dấu yêu thích">' + (w.favorite ? '⭐' : '☆') + '</button>' +
       '<div class="word-item-text">' +
-        '<div class="word-item-en">' + w.word + (isWrong ? ' <span class="wrong-tag">❌</span>' : '') + '</div>' +
+        '<div class="word-item-en">' + w.word + (wrongCount > 0 ? ' <span class="wrong-tag">❌ x' + wrongCount + '</span>' : '') + '</div>' +
         '<div class="word-item-vi">' + w.meaning + '</div>' +
       '</div>' +
       '<span class="word-item-type">' + w.type + '</span>' +
@@ -535,6 +599,12 @@ function renderWordList() {
       '</div>';
     container.appendChild(div);
   });
+}
+
+function toggleFavorite(idx) {
+  words[idx].favorite = !words[idx].favorite;
+  localStorage.setItem("mochi_words", JSON.stringify(words));
+  renderWordList();
 }
 
 function setFilter(btn) {
@@ -678,26 +748,73 @@ async function lookupWord() {
   lookupAudioUrl = null;
   lookupCurrentWord = null;
 
-  try {
-    // Call dictionary + translation APIs in parallel.
-    // translateToVi() has its own internal fallback chain so it
-    // never rejects the outer Promise.all if a translation
-    // provider is down / rate-limited / expired.
-    const [dictRes, viMeaning] = await Promise.all([
-      fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word)),
-      translateToVi(word)
-    ]);
+  // Dictionary API matches lowercase headwords, so normalize before querying.
+  const queryWord = word.toLowerCase();
 
-    if (!dictRes.ok) {
-      area.innerHTML = '<div class="lookup-not-found"><div class="empty-icon">🤷</div><p>Không tìm thấy từ <strong>"' + escHtml(word) + '"</strong>.<br>Thử kiểm tra lại chính tả!</p></div>';
-      return;
+  // Use allSettled (not all) so a dictionary timeout/CORS hiccup doesn't
+  // wipe out a translation that DID succeed, and vice versa — this was
+  // the root of the "tra từ điển bị lỗi" bug: any single rejected promise
+  // used to blank the whole result even when one side had good data.
+  const [dictOutcome, viOutcome] = await Promise.allSettled([
+    fetchDictEntry(queryWord),
+    translateToVi(word)
+  ]);
+
+  const viMeaning = viOutcome.status === "fulfilled" ? viOutcome.value : "";
+  const entry = dictOutcome.status === "fulfilled" ? dictOutcome.value : null;
+
+  if (!entry) {
+    if (viMeaning) {
+      // Dictionary lookup failed/word not in it, but we still have a
+      // Vietnamese translation — show that instead of a dead end.
+      renderTranslationOnlyResult(word, viMeaning);
+    } else {
+      area.innerHTML = '<div class="lookup-not-found"><div class="empty-icon">🤷</div><p>Không tìm thấy từ <strong>"' + escHtml(word) + '"</strong>.<br>Thử kiểm tra lại chính tả, hoặc kiểm tra kết nối mạng!</p></div>';
     }
-
-    const dictData = await dictRes.json();
-    renderLookupResult(dictData[0], viMeaning);
-  } catch (e) {
-    area.innerHTML = '<div class="lookup-not-found"><div class="empty-icon">📡</div><p>Lỗi kết nối mạng.<br>Vui lòng thử lại!</p></div>';
+    return;
   }
+
+  renderLookupResult(entry, viMeaning);
+}
+
+// Fetch + parse a single dictionary entry. Returns null (never throws)
+// on a network error, a non-2xx response, or an empty/malformed body,
+// so callers can fall back gracefully instead of failing the whole lookup.
+async function fetchDictEntry(word) {
+  try {
+    const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word));
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data[0]) return null;
+    return data[0];
+  } catch (e) {
+    return null;
+  }
+}
+
+function renderTranslationOnlyResult(word, viMeaning) {
+  const area = document.getElementById("lookup-result-area");
+  lookupCurrentWord = word;
+  lookupSelectedType = "Danh từ";
+  lookupAudioUrl = null;
+  const alreadyAdded = words.some(w => w.word.toLowerCase() === word.toLowerCase());
+  const allTypes = ["Danh từ","Động từ","Tính từ","Trạng từ","Đại từ","Giới từ","Liên từ","Thán từ"];
+  const typePills = allTypes.map(t =>
+    '<button class="type-pill' + (t === lookupSelectedType ? ' active' : '') + '" onclick="setLookupType(this,\'' + t + '\')">' + t + '</button>'
+  ).join("");
+
+  area.innerHTML =
+    '<div class="lookup-word-card">' +
+      '<div class="lookup-word-header"><div><div class="lookup-word-title">' + escHtml(word) + '</div></div>' +
+        '<button class="lookup-speak-btn" onclick="speakText(\'' + word.replace(/'/g,"\\'") + '\')" title="Phát âm">🔊</button>' +
+      '</div>' +
+      '<div class="lookup-vi-meaning"><span class="lookup-vi-label">🇻🇳 Nghĩa tiếng Việt</span><div class="lookup-vi-text">' + escHtml(viMeaning) + '</div></div>' +
+      '<p style="font-size:12px;color:var(--text-muted);margin:6px 0 0">📡 Không lấy được định nghĩa tiếng Anh lúc này, nhưng bạn vẫn có thể thêm từ này vào kho.</p>' +
+      '<div class="lookup-type-selector-wrap"><label>Chọn loại từ khi thêm:</label><div class="type-pills" id="lookup-type-pills">' + typePills + '</div></div>' +
+      '<button class="lookup-add-btn" id="lookup-add-btn" onclick="addFromLookup()" ' + (alreadyAdded ? 'disabled' : '') + '>' +
+        (alreadyAdded ? '✅ Đã có trong kho từ' : '➕ Thêm vào kho ôn tập') +
+      '</button>' +
+    '</div>';
 }
 
 /* Translate an English word to Vietnamese.
@@ -1117,6 +1234,7 @@ function answerVocab(btn, isCorrect) {
   } else {
     // mark wrong in wrong words list
     if (vocabQuestion) {
+      bumpWrongCount(vocabQuestion.word);
       const already = wrongWords.some(w => w.word === vocabQuestion.word);
       if (!already) { wrongWords.push(vocabQuestion); saveWrongWords(); }
     }
