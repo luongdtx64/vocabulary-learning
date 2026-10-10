@@ -38,7 +38,20 @@ const wrongMemes = [
 /* ==============================================
    INIT
 ============================================== */
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("mochi_theme", t); } catch (e) {}
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = t === "dark" ? "#000000" : "#ffffff";
+  const b = document.getElementById("theme-toggle");
+  if (b) b.textContent = t === "dark" ? "☀️" : "🌙";
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+}
+
 function init() {
+  applyTheme(document.documentElement.dataset.theme || "light");
   updateStreak();
   updateHeaderStats();
   setupTypePills();
@@ -322,13 +335,17 @@ function saveWord(word, meaning, type) {
    REVIEW
 ============================================== */
 function setReviewMode(mode) {
+  const prev = reviewMode;
   reviewMode = mode;
   document.querySelectorAll(".review-mode-btn").forEach(function(btn) {
     btn.classList.toggle("active", btn.dataset.mode === mode);
   });
+  // Ghép từ dùng giao diện riêng nên đổi sang/khỏi chế độ này phải bắt đầu lại lượt
+  if (prev !== mode && (prev === "match" || mode === "match") && document.getElementById("review-screen").classList.contains("active")) startReview();
 }
 
 function startReview() {
+  document.getElementById("match-content").style.display = "none";
   sessionTotal = 0;
   sessionCorrect = 0;
   sessionSkipped = 0;
@@ -354,6 +371,11 @@ function startReview() {
   reviewQueue = shuffle([...sourceWords]);
   sessionTotal = reviewQueue.length;
   updateProgress();
+  if (reviewMode === "match") {
+    document.getElementById("review-content").style.display = "none";
+    startMatchBatch();
+    return;
+  }
   showNextWord();
 }
 
@@ -526,6 +548,7 @@ function skipWord() {
 }
 
 function endSession() {
+  document.getElementById("match-content").style.display = "none";
   document.getElementById("review-content").style.display = "none";
   const sessionComplete = document.getElementById("session-complete");
   sessionComplete.style.display = "flex";
@@ -642,6 +665,171 @@ function deleteAllWords() {
 }
 
 /* ==============================================
+   MATCH MODE — kéo thả nghĩa vào từ (5 từ / lượt)
+   Dùng Pointer Events nên chạy cả chuột lẫn cảm ứng;
+   ngoài ra có thể chạm nghĩa → chạm từ để ghép.
+============================================== */
+const MATCH_BATCH = 5;
+let matchBatch = [], matchChecked = false, matchSelected = null;
+
+function startMatchBatch() {
+  document.getElementById("match-content").style.display = "block";
+  matchBatch = reviewQueue.slice(0, MATCH_BATCH);
+  matchChecked = false; matchSelected = null;
+  const wordsCol = document.getElementById("match-words");
+  const bank = document.getElementById("match-bank");
+  wordsCol.innerHTML = ""; bank.innerHTML = "";
+  matchBatch.forEach(function(w, i) {
+    const row = document.createElement("div");
+    row.className = "match-row"; row.dataset.i = i;
+    row.innerHTML = '<div class="match-word"></div><div class="match-slot"></div>';
+    row.querySelector(".match-word").textContent = w.word;
+    wordsCol.appendChild(row);
+  });
+  shuffle(matchBatch.map(function(_, i) { return i; })).forEach(function(i) {
+    const c = document.createElement("div");
+    c.className = "match-chip"; c.dataset.i = i; c.textContent = matchBatch[i].meaning;
+    bank.appendChild(c);
+  });
+  document.getElementById("match-summary").classList.add("hidden");
+  document.getElementById("match-action-btn").textContent = "Kiểm tra ✓";
+}
+
+function placeChip(chip, target) {
+  const bank = document.getElementById("match-bank");
+  if (target && target.classList.contains("match-slot")) {
+    const old = target.querySelector(".match-chip");
+    if (old && old !== chip) bank.appendChild(old);
+    target.appendChild(chip);
+  } else {
+    bank.appendChild(chip);
+  }
+  clearMatchSelection();
+}
+
+function clearMatchSelection() {
+  if (matchSelected) matchSelected.classList.remove("selected");
+  matchSelected = null;
+}
+
+function matchDropTarget(x, y) {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const row = el.closest(".match-row");
+  if (row) return row.querySelector(".match-slot");
+  return el.closest(".match-bank") ? document.getElementById("match-bank") : null;
+}
+
+function matchPointerDown(e) {
+  if (matchChecked || (e.pointerType === "mouse" && e.button !== 0)) return;
+  const chip = e.target.closest(".match-chip");
+  if (!chip) return;
+  e.preventDefault();
+  const rect = chip.getBoundingClientRect();
+  const offX = e.clientX - rect.left, offY = e.clientY - rect.top;
+  const sx = e.clientX, sy = e.clientY;
+  let ghost = null, moved = false, hover = null;
+
+  function setHover(t) {
+    if (hover === t) return;
+    if (hover) hover.classList.remove("over");
+    hover = t;
+    if (hover) hover.classList.add("over");
+  }
+  function onMove(ev) {
+    if (!moved) {
+      if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+      moved = true;
+      ghost = chip.cloneNode(true);
+      ghost.classList.add("match-ghost");
+      ghost.style.width = rect.width + "px";
+      document.body.appendChild(ghost);
+      chip.classList.add("dragging");
+    }
+    ghost.style.left = (ev.clientX - offX) + "px";
+    ghost.style.top = (ev.clientY - offY) + "px";
+    setHover(matchDropTarget(ev.clientX, ev.clientY));
+  }
+  function finish(ev, cancelled) {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onCancel);
+    setHover(null);
+    if (ghost) ghost.remove();
+    chip.classList.remove("dragging");
+    if (!moved) {
+      if (cancelled) return;
+      if (matchSelected === chip) { clearMatchSelection(); return; }
+      clearMatchSelection();
+      matchSelected = chip; chip.classList.add("selected");
+      return;
+    }
+    if (cancelled) return;
+    const t = matchDropTarget(ev.clientX, ev.clientY);
+    if (t) placeChip(chip, t);
+  }
+  function onUp(ev) { finish(ev, false); }
+  function onCancel(ev) { finish(ev, true); }
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onCancel);
+}
+
+// Tap fallback: chọn một nghĩa rồi chạm vào từ (hoặc vùng cột nghĩa để trả lại)
+function matchBoardClick(e) {
+  if (matchChecked || !matchSelected || e.target.closest(".match-chip")) return;
+  const row = e.target.closest(".match-row");
+  if (row) placeChip(matchSelected, row.querySelector(".match-slot"));
+  else if (e.target.closest(".match-bank")) placeChip(matchSelected, document.getElementById("match-bank"));
+}
+
+function matchAction() {
+  if (!matchChecked) { checkMatch(); return; }
+  reviewQueue.splice(0, matchBatch.length);
+  updateProgress();
+  if (reviewQueue.length === 0) { endSession(); return; }
+  startMatchBatch();
+}
+
+function checkMatch() {
+  const rows = Array.from(document.querySelectorAll("#match-words .match-row"));
+  if (rows.some(function(r) { return !r.querySelector(".match-chip"); })) {
+    showMsg("Hãy ghép hết các từ trước khi kiểm tra!");
+    return;
+  }
+  matchChecked = true;
+  clearMatchSelection();
+  let ok = 0;
+  rows.forEach(function(r) {
+    const w = matchBatch[+r.dataset.i];
+    const chip = r.querySelector(".match-chip");
+    const good = chip.textContent.trim().toLowerCase() === w.meaning.trim().toLowerCase();
+    r.classList.add(good ? "correct" : "wrong");
+    if (good) {
+      ok++; sessionCorrect++;
+      if (isWrongWordsMode) wrongWords = wrongWords.filter(function(x) { return x.word.toLowerCase() !== w.word.toLowerCase(); });
+    } else {
+      bumpWrongCount(w.word);
+      if (!wrongWords.some(function(x) { return x.word.toLowerCase() === w.word.toLowerCase(); })) wrongWords.push(Object.assign({}, w));
+      const fix = document.createElement("div");
+      fix.className = "match-fix";
+      fix.textContent = "✓ " + w.meaning;
+      r.appendChild(fix);
+    }
+  });
+  if (ok) bumpStreak();
+  saveWrongWords();
+  const sum = document.getElementById("match-summary");
+  sum.textContent = (ok === rows.length ? "🎉 " : "") + "Đúng " + ok + "/" + rows.length;
+  sum.classList.remove("hidden");
+  const left = reviewQueue.length - matchBatch.length;
+  document.getElementById("match-action-btn").textContent = left > 0 ? Math.min(MATCH_BATCH, left) + " từ tiếp theo →" : "Hoàn thành 🎉";
+}
+
+document.getElementById("match-board").addEventListener("pointerdown", matchPointerDown);
+document.getElementById("match-board").addEventListener("click", matchBoardClick);
+
+/* ==============================================
    IMPORT / EXPORT
 ============================================== */
 function exportWords() {
@@ -732,120 +920,110 @@ function submitJsonPaste() {
 let lookupAudioUrl = null;
 let lookupCurrentWord = null;
 let lookupSelectedType = "Danh từ";
+let lookupSeq = 0;
 
 function onLookupInput() {
   const val = document.getElementById("lookup-input").value.trim();
   if (!val) document.getElementById("lookup-result-area").innerHTML = "";
 }
 
+async function fetchJSON(url, ms) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(function() { ctrl.abort(); }, ms || 8000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function lookupWord() {
   const input = document.getElementById("lookup-input");
-  const word = input.value.trim();
+  const word = input.value.trim().replace(/\s+/g, " ");
   if (!word) { showMsg("Bạn chưa nhập từ cần tra!"); return; }
 
   const area = document.getElementById("lookup-result-area");
+  const btn = document.getElementById("lookup-btn");
+  const seq = ++lookupSeq; // bỏ kết quả cũ nếu người dùng tra từ khác trong lúc chờ
   area.innerHTML = '<div class="lookup-loading">⏳ Đang tra từ điển...</div>';
   lookupAudioUrl = null;
   lookupCurrentWord = null;
+  btn.disabled = true;
 
-  // Dictionary API matches lowercase headwords, so normalize before querying.
-  const queryWord = word.toLowerCase();
-
-  // Use allSettled (not all) so a dictionary timeout/CORS hiccup doesn't
-  // wipe out a translation that DID succeed, and vice versa — this was
-  // the root of the "tra từ điển bị lỗi" bug: any single rejected promise
-  // used to blank the whole result even when one side had good data.
-  const [dictOutcome, viOutcome] = await Promise.allSettled([
-    fetchDictEntry(queryWord),
+  const outcomes = await Promise.allSettled([
+    fetchDictEntry(word.toLowerCase()),
     translateToVi(word)
   ]);
+  if (seq !== lookupSeq) return;
+  btn.disabled = false;
 
-  const viMeaning = viOutcome.status === "fulfilled" ? viOutcome.value : "";
-  const entry = dictOutcome.status === "fulfilled" ? dictOutcome.value : null;
+  const entry = outcomes[0].status === "fulfilled" ? outcomes[0].value : null;
+  const viMeaning = outcomes[1].status === "fulfilled" ? outcomes[1].value : "";
 
-  if (!entry) {
-    if (viMeaning) {
-      // Dictionary lookup failed/word not in it, but we still have a
-      // Vietnamese translation — show that instead of a dead end.
-      renderTranslationOnlyResult(word, viMeaning);
-    } else {
-      area.innerHTML = '<div class="lookup-not-found"><div class="empty-icon">🤷</div><p>Không tìm thấy từ <strong>"' + escHtml(word) + '"</strong>.<br>Thử kiểm tra lại chính tả, hoặc kiểm tra kết nối mạng!</p></div>';
-    }
-    return;
-  }
-
-  renderLookupResult(entry, viMeaning);
+  if (entry) renderLookupResult(entry, viMeaning);
+  else if (viMeaning) renderTranslationOnlyResult(word, viMeaning);
+  else area.innerHTML = '<div class="lookup-not-found"><div class="empty-icon">🤷</div><p>Không tìm thấy từ <strong>"' + escHtml(word) + '"</strong>.<br>Thử kiểm tra lại chính tả, hoặc kiểm tra kết nối mạng!</p></div>';
 }
 
-// Fetch + parse a single dictionary entry. Returns null (never throws)
-// on a network error, a non-2xx response, or an empty/malformed body,
-// so callers can fall back gracefully instead of failing the whole lookup.
+// Trả về null (không bao giờ throw) khi lỗi mạng / timeout / không có từ.
+// Từ điển chỉ hỗ trợ từ đơn, nên cụm từ có khoảng trắng sẽ chỉ dùng bản dịch.
 async function fetchDictEntry(word) {
-  try {
-    const res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word));
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data) || !data[0]) return null;
-    return data[0];
-  } catch (e) {
-    return null;
-  }
+  if (/\s/.test(word)) return null;
+  const data = await fetchJSON("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word));
+  return Array.isArray(data) && data[0] && data[0].word ? data[0] : null;
+}
+
+const LOOKUP_TYPES = ["Danh từ","Động từ","Tính từ","Trạng từ","Đại từ","Giới từ","Liên từ","Thán từ"];
+
+function lookupTypePillsHtml() {
+  return LOOKUP_TYPES.map(function(t) {
+    return '<button class="type-pill' + (t === lookupSelectedType ? ' active' : '') + '" onclick="setLookupType(this,\'' + t + '\')">' + t + '</button>';
+  }).join("");
+}
+
+// Ô nghĩa tiếng Việt có thể sửa trước khi thêm vào kho
+function lookupViBlockHtml(viMeaning) {
+  return '<div class="lookup-vi-meaning"><span class="lookup-vi-label">🇻🇳 Nghĩa tiếng Việt (có thể sửa)</span>' +
+    '<input type="text" class="lookup-vi-input" id="lookup-vi-input" value="' + escHtml(viMeaning) + '" placeholder="Nhập nghĩa tiếng Việt..." autocomplete="off"></div>';
 }
 
 function renderTranslationOnlyResult(word, viMeaning) {
-  const area = document.getElementById("lookup-result-area");
   lookupCurrentWord = word;
   lookupSelectedType = "Danh từ";
   lookupAudioUrl = null;
-  const alreadyAdded = words.some(w => w.word.toLowerCase() === word.toLowerCase());
-  const allTypes = ["Danh từ","Động từ","Tính từ","Trạng từ","Đại từ","Giới từ","Liên từ","Thán từ"];
-  const typePills = allTypes.map(t =>
-    '<button class="type-pill' + (t === lookupSelectedType ? ' active' : '') + '" onclick="setLookupType(this,\'' + t + '\')">' + t + '</button>'
-  ).join("");
-
-  area.innerHTML =
+  const alreadyAdded = words.some(function(w) { return w.word.toLowerCase() === word.toLowerCase(); });
+  document.getElementById("lookup-result-area").innerHTML =
     '<div class="lookup-word-card">' +
       '<div class="lookup-word-header"><div><div class="lookup-word-title">' + escHtml(word) + '</div></div>' +
-        '<button class="lookup-speak-btn" onclick="speakText(\'' + word.replace(/'/g,"\\'") + '\')" title="Phát âm">🔊</button>' +
+        '<button class="lookup-speak-btn" onclick="speakLookup()" title="Phát âm">🔊</button>' +
       '</div>' +
-      '<div class="lookup-vi-meaning"><span class="lookup-vi-label">🇻🇳 Nghĩa tiếng Việt</span><div class="lookup-vi-text">' + escHtml(viMeaning) + '</div></div>' +
-      '<p style="font-size:12px;color:var(--text-muted);margin:6px 0 0">📡 Không lấy được định nghĩa tiếng Anh lúc này, nhưng bạn vẫn có thể thêm từ này vào kho.</p>' +
-      '<div class="lookup-type-selector-wrap"><label>Chọn loại từ khi thêm:</label><div class="type-pills" id="lookup-type-pills">' + typePills + '</div></div>' +
+      lookupViBlockHtml(viMeaning) +
+      '<p class="lookup-note">📡 Không lấy được định nghĩa tiếng Anh lúc này, nhưng bạn vẫn có thể thêm từ này vào kho.</p>' +
+      '<div class="lookup-type-selector-wrap"><label>Chọn loại từ khi thêm:</label><div class="type-pills" id="lookup-type-pills">' + lookupTypePillsHtml() + '</div></div>' +
       '<button class="lookup-add-btn" id="lookup-add-btn" onclick="addFromLookup()" ' + (alreadyAdded ? 'disabled' : '') + '>' +
         (alreadyAdded ? '✅ Đã có trong kho từ' : '➕ Thêm vào kho ôn tập') +
       '</button>' +
     '</div>';
 }
 
-/* Translate an English word to Vietnamese.
-   1) Google Translate's public (no-key) endpoint — fast, no daily quota issues.
-   2) MyMemory — fallback, but its free quota expires/resets daily so it's
-      no longer used as the primary source (this was the "hết hạn" bug). */
+function speakLookup() { speakText(lookupCurrentWord); }
+
+/* Dịch Anh → Việt: Google Translate (public) trước, MyMemory dự phòng. */
 async function translateToVi(word) {
-  // 1) Google Translate public endpoint
-  try {
-    const res = await fetch(
-      "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=" + encodeURIComponent(word)
-    );
-    if (res.ok) {
-      const data = await res.json();
-      const text = data && data[0] ? data[0].map(chunk => chunk[0]).join("") : "";
-      if (text && text.trim()) return text.trim();
-    }
-  } catch (e) { /* fall through to backup */ }
-
-  // 2) MyMemory fallback (skip if quota/warning message is returned)
-  try {
-    const res2 = await fetch(
-      "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(word) + "&langpair=en|vi"
-    );
-    const data2 = await res2.json();
-    if (data2.responseStatus === 200) {
-      const text = data2.responseData.translatedText || "";
-      if (text && !/MYMEMORY WARNING|QUOTA/i.test(text)) return text;
-    }
-  } catch (e) { /* no fallback left */ }
-
+  const g = await fetchJSON("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&q=" + encodeURIComponent(word));
+  if (g && Array.isArray(g[0])) {
+    const text = g[0].map(function(c) { return (c && c[0]) || ""; }).join("").trim();
+    if (text) return text;
+  }
+  const m = await fetchJSON("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(word) + "&langpair=en|vi");
+  if (m && Number(m.responseStatus) === 200 && m.responseData) {
+    const text = (m.responseData.translatedText || "").trim();
+    if (text && !/MYMEMORY WARNING|QUOTA/i.test(text)) return text;
+  }
   return "";
 }
 
@@ -875,7 +1053,8 @@ function renderLookupResult(entry, viMeaning) {
   // Detect first part of speech for default type
   const firstMeaning = (entry.meanings || [])[0];
   if (firstMeaning) {
-    lookupSelectedType = posMapVI[firstMeaning.partOfSpeech] || "Danh từ";
+    const t0 = posMapVI[firstMeaning.partOfSpeech];
+    lookupSelectedType = LOOKUP_TYPES.indexOf(t0) >= 0 ? t0 : "Danh từ";
   }
 
   // Check if already in word list
@@ -905,7 +1084,7 @@ function renderLookupResult(entry, viMeaning) {
 
   const speakBtn = lookupAudioUrl
     ? '<button class="lookup-speak-btn" onclick="playLookupAudio()" title="Phát âm">🔊</button>'
-    : '<button class="lookup-speak-btn" onclick="speakText(\'' + entry.word.replace(/'/g,"\\'") + '\')" title="Phát âm">🔊</button>';
+    : '<button class="lookup-speak-btn" onclick="speakLookup()" title="Phát âm">🔊</button>';
 
   const area = document.getElementById("lookup-result-area");
   area.innerHTML =
@@ -920,11 +1099,7 @@ function renderLookupResult(entry, viMeaning) {
       '</div>' +
 
       // Vietnamese meaning (big highlight)
-      (viMeaning ?
-        '<div class="lookup-vi-meaning">' +
-          '<span class="lookup-vi-label">🇻🇳 Nghĩa tiếng Việt</span>' +
-          '<div class="lookup-vi-text">' + escHtml(viMeaning) + '</div>' +
-        '</div>' : '') +
+      lookupViBlockHtml(viMeaning) +
 
       // English definitions
       '<div class="lookup-meanings-section">' +
@@ -957,12 +1132,12 @@ function playLookupAudio() {
 
 function addFromLookup() {
   if (!lookupCurrentWord) return;
-  const exists = words.some(w => w.word.toLowerCase() === lookupCurrentWord.toLowerCase());
+  const exists = words.some(function(w) { return w.word.toLowerCase() === lookupCurrentWord.toLowerCase(); });
   if (exists) { showMsg("Từ này đã có trong kho rồi!"); return; }
 
-  // Get Vietnamese meaning from UI
-  const viEl = document.querySelector(".lookup-vi-text");
-  const meaning = viEl ? viEl.textContent.trim() : "(xem từ điển)";
+  const viEl = document.getElementById("lookup-vi-input");
+  const meaning = viEl ? viEl.value.trim() : "";
+  if (!meaning) { showMsg("Hãy nhập nghĩa tiếng Việt trước khi thêm!"); if (viEl) viEl.focus(); return; }
 
   saveWord(lookupCurrentWord, meaning, lookupSelectedType);
 
@@ -1007,6 +1182,7 @@ document.getElementById("user-meaning").addEventListener("keydown", function(e) 
 document.addEventListener("keydown", function(e) {
   const reviewActive = document.getElementById("review-screen").classList.contains("active");
   if (!reviewActive) return;
+  if (reviewMode === "match") return;
 
   if (e.key === "Enter") {
     const resultBox = document.getElementById("result-box");

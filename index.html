@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0A0E13">
+<meta name="theme-color" content="#ffffff">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("mochi_theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <title>ETO Club</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,6 +26,7 @@
       <div class="logo">ETO Club</div>
     </div>
     <div class="header-stats" id="header-stats">
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Chế độ ban đêm" aria-label="Chế độ ban đêm">🌙</button>
       <span class="stat-chip" id="word-count-pill">📚 <b id="total-words-display">0</b></span>
       <span class="stat-chip stat-chip-streak" id="streak-pill">🔥 <b id="streak-display">0</b></span>
     </div>
@@ -73,6 +75,10 @@
       <button class="app-icon-tile" onclick="setReviewMode('dictation'); showScreen('review-screen')">
         <span class="app-icon-box card-dictation">🎧</span>
         <span class="app-icon-label">Nghe chép</span>
+      </button>
+      <button class="app-icon-tile" onclick="setReviewMode('match'); showScreen('review-screen')">
+        <span class="app-icon-box card-match">🧩</span>
+        <span class="app-icon-label">Ghép từ</span>
       </button>
       <button class="app-icon-tile" onclick="showScreen('game-screen')">
         <span class="app-icon-box card-game">🐱</span>
@@ -162,6 +168,7 @@
       <button class="review-mode-btn active" data-mode="en-vi" onclick="setReviewMode('en-vi')">🇬🇧 EN → VI</button>
       <button class="review-mode-btn" data-mode="vi-en" onclick="setReviewMode('vi-en')">🇻🇳 VI → EN</button>
       <button class="review-mode-btn" data-mode="dictation" onclick="setReviewMode('dictation')">🎧 Nghe chép</button>
+      <button class="review-mode-btn" data-mode="match" onclick="setReviewMode('match')">🧩 Ghép từ</button>
     </div>
 
     <div id="review-content">
@@ -198,6 +205,17 @@
         <div class="result-text" id="result-text"></div>
         <button class="primary-btn" id="next-btn" onclick="showNextWord()">Tiếp theo →</button>
       </div>
+    </div>
+
+    <!-- Drag & drop matching: 5 words <-> 5 meanings -->
+    <div id="match-content" style="display:none">
+      <p class="match-instruction">Kéo nghĩa ở cột phải thả vào từ tương ứng (hoặc chạm nghĩa rồi chạm từ).</p>
+      <div class="match-board" id="match-board">
+        <div class="match-col" id="match-words"></div>
+        <div class="match-col match-bank" id="match-bank"></div>
+      </div>
+      <div class="match-summary hidden" id="match-summary"></div>
+      <button class="primary-btn" id="match-action-btn" onclick="matchAction()">Kiểm tra ✓</button>
     </div>
 
     <!-- Session complete -->
