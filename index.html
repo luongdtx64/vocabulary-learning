@@ -6,6 +6,13 @@
 <meta name="theme-color" content="#ffffff">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("mochi_theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <title>ETO Club</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ETO Club">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -84,6 +91,10 @@
         <span class="app-icon-box card-game">🐱</span>
         <span class="app-icon-label">Mini Game</span>
       </button>
+      <button class="app-icon-tile" onclick="showScreen('reminder-screen')">
+        <span class="app-icon-box card-remind">🔔</span>
+        <span class="app-icon-label">Nhắc nhở</span>
+      </button>
       <button class="app-icon-tile" onclick="showScreen('backup-screen')">
         <span class="app-icon-box card-backup">💾</span>
         <span class="app-icon-label">Sao lưu</span>
@@ -125,6 +136,10 @@
       <div class="input-group">
         <label>Nghĩa tiếng Việt</label>
         <input type="text" id="meaning-input" placeholder="Ví dụ: xinh đẹp" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label>Nghĩa tiếng Anh <span class="label-opt">(không bắt buộc)</span></label>
+        <input type="text" id="meaning-en-input" placeholder="Ví dụ: having beauty; attractive" autocomplete="off" spellcheck="false">
       </div>
       <div class="input-group">
         <label>Loại từ</label>
@@ -185,6 +200,7 @@
             <div class="card-hint" id="card-hint-back">Nghĩa của từ</div>
             <div class="card-meaning" id="review-meaning-back">—</div>
             <div class="card-type-badge" id="review-type-back">—</div>
+            <div class="card-meaning-en" id="review-meaning-en"></div>
           </div>
         </div>
       </div>
@@ -258,6 +274,33 @@
     <button class="danger-btn" onclick="deleteAllWords()" style="margin-top:16px">🗑️ Xoá tất cả từ</button>
   </div>
 
+  <!-- ===== REMINDER / INSTALL SCREEN ===== -->
+  <div id="reminder-screen" class="screen">
+    <div class="screen-header">
+      <button class="back-icon-btn" onclick="showScreen('menu-screen')">←</button>
+      <h2>Nhắc nhở & Cài app</h2>
+    </div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="settings-text"><strong>🔔 Nhắc ôn tập mỗi ngày</strong><span id="reminder-status">Đang tắt</span></div>
+        <button class="toggle-pill" id="reminder-toggle" onclick="toggleReminder()">Tắt</button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-text"><strong>Giờ nhắc</strong><span>Chỉ nhắc nếu hôm nay bạn chưa ôn</span></div>
+        <input type="time" id="reminder-time" value="20:00" onchange="setReminderTime(this.value)">
+      </div>
+      <button class="secondary-btn" onclick="testReminder()">Gửi thông báo thử</button>
+    </div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="settings-text"><strong>📲 Cài như app</strong><span>Mở từ màn hình chính, dùng được khi mất mạng</span></div>
+        <button class="toggle-pill on" id="install-btn" onclick="installApp()">Cài đặt</button>
+        <span id="install-done" style="display:none">✅ Đã cài</span>
+      </div>
+    </div>
+    <p class="settings-note">Nhắc nhở chạy ngay trên máy bạn (không qua máy chủ), nên hoạt động tốt nhất khi đã cài app. Android/Chrome: có thể nhắc cả khi đã tắt app. iPhone: cần iOS 16.4+ và phải thêm vào Màn hình chính; thông báo chủ yếu hiện khi bạn mở app quanh giờ nhắc.</p>
+  </div>
+
   <!-- ===== BACKUP SCREEN ===== -->
   <div id="backup-screen" class="screen">
     <div class="screen-header">
@@ -290,6 +333,28 @@
         </div>
         <button class="backup-action-btn paste-btn" onclick="showJsonPasteBox()">Dán</button>
       </div>
+    </div>
+
+    <div class="backup-card">
+      <div class="backup-icon">🔄</div>
+      <div class="backup-info">
+        <strong>Chuyển văn bản → JSON</strong>
+        <span>Nhập "từ - nghĩa", bấm Convert</span>
+      </div>
+      <button class="backup-action-btn paste-btn" onclick="showConvertBox()">Mở</button>
+    </div>
+
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="settings-text"><strong>⏱️ Tự sao lưu mỗi 72 giờ</strong><span id="backup-status">—</span></div>
+        <button class="toggle-pill on" id="autobackup-toggle" onclick="toggleAutoBackup()">Bật</button>
+      </div>
+      <div class="settings-row">
+        <div class="settings-text"><strong>Tự tải file về máy</strong><span>Trình duyệt có thể chặn tải tự động</span></div>
+        <button class="toggle-pill" id="autodl-toggle" onclick="toggleAutoDownload()">Tắt</button>
+      </div>
+      <button class="secondary-btn" onclick="backupNow()">Sao lưu ngay</button>
+      <div id="backup-list"></div>
     </div>
 
     <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImportFile(event)">
@@ -446,6 +511,25 @@
   </div>
 </div>
 
+<!-- Convert popup -->
+<div id="convert-popup" class="overlay hidden">
+  <div class="overlay-card convert-card">
+    <h2>🔄 Văn bản → JSON</h2>
+    <p class="convert-help">Mỗi dòng một từ: <code>hello - xin chào</code><br>Thêm loại từ: <code>run (v) - chạy</code> · Thêm nghĩa tiếng Anh: <code>run (v) - chạy | to move fast</code></p>
+    <textarea id="convert-input" placeholder="hello - xin chào&#10;beautiful (adj) - xinh đẹp | having beauty&#10;run (v) - chạy"></textarea>
+    <button class="primary-btn" onclick="runConvert()">Convert ➜</button>
+    <div class="convert-status" id="convert-status"></div>
+    <textarea id="convert-output" readonly placeholder="Kết quả JSON sẽ hiện ở đây"></textarea>
+    <div class="overlay-actions convert-actions">
+      <button class="secondary-btn" onclick="copyConvert()">📋 Sao chép</button>
+      <button class="secondary-btn" onclick="downloadConvert()">⬇️ Tải file</button>
+      <button class="primary-btn" onclick="importConvert()">✅ Nhập vào kho</button>
+    </div>
+    <button class="secondary-btn" onclick="closeConvertBox()">Đóng</button>
+  </div>
+</div>
+
 <script src="scripts.js"></script>
+<script src="app-extra.js"></script>
 </body>
 </html>

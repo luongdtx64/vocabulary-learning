@@ -303,6 +303,7 @@ async function addWord() {
   const w = document.getElementById("word-input").value.trim();
   const m = document.getElementById("meaning-input").value.trim();
   const t = selectedType;
+  const en = document.getElementById("meaning-en-input").value.trim();
 
   if (!w || !m) { showMsg("Bạn chưa nhập đủ dữ liệu!"); return; }
 
@@ -313,21 +314,24 @@ async function addWord() {
   const suggestion = await checkSpelling(w);
   if (suggestion && typeof suggestion === "string" && suggestion.toLowerCase() !== w.toLowerCase()) {
     showMsg('Ý bạn là "' + suggestion + '"?',
-      () => saveWord(suggestion, m, t),
-      () => saveWord(w, m, t)
+      () => saveWord(suggestion, m, t, en),
+      () => saveWord(w, m, t, en)
     );
   } else {
-    saveWord(w, m, t);
+    saveWord(w, m, t, en);
   }
 }
 
-function saveWord(word, meaning, type) {
-  words.push({ word, meaning, type, favorite: false });
+function saveWord(word, meaning, type, meaningEn) {
+  const item = { word, meaning, type, favorite: false };
+  if (meaningEn) item.meaningEn = meaningEn;
+  words.push(item);
   localStorage.setItem("mochi_words", JSON.stringify(words));
   updateHeaderStats();
   showMsg("Đã lưu từ!");
   document.getElementById("word-input").value = "";
   document.getElementById("meaning-input").value = "";
+  document.getElementById("meaning-en-input").value = "";
   document.getElementById("word-input").focus();
 }
 
@@ -460,6 +464,7 @@ function showNextWord() {
     document.querySelector(".tts-card-btn").style.display = "";
   }
 
+  document.getElementById("review-meaning-en").textContent = (reviewMode === "en-vi" && currentWord.meaningEn) ? currentWord.meaningEn : "";
   const input = document.getElementById("user-meaning");
   input.value = "";
   setTimeout(() => input.focus(), 100);
@@ -614,6 +619,7 @@ function renderWordList() {
       '<div class="word-item-text">' +
         '<div class="word-item-en">' + w.word + (wrongCount > 0 ? ' <span class="wrong-tag">❌ x' + wrongCount + '</span>' : '') + '</div>' +
         '<div class="word-item-vi">' + w.meaning + '</div>' +
+        (w.meaningEn ? '<div class="word-item-en-def">' + escHtml(w.meaningEn) + '</div>' : '') +
       '</div>' +
       '<span class="word-item-type">' + w.type + '</span>' +
       '<div class="word-item-actions">' +
@@ -921,6 +927,7 @@ let lookupAudioUrl = null;
 let lookupCurrentWord = null;
 let lookupSelectedType = "Danh từ";
 let lookupSeq = 0;
+let lookupCurrentDef = "";
 
 function onLookupInput() {
   const val = document.getElementById("lookup-input").value.trim();
@@ -995,6 +1002,7 @@ function renderTranslationOnlyResult(word, viMeaning) {
   lookupCurrentWord = word;
   lookupSelectedType = "Danh từ";
   lookupAudioUrl = null;
+  lookupCurrentDef = "";
   const alreadyAdded = words.some(function(w) { return w.word.toLowerCase() === word.toLowerCase(); });
   document.getElementById("lookup-result-area").innerHTML =
     '<div class="lookup-word-card">' +
@@ -1052,6 +1060,7 @@ function renderLookupResult(entry, viMeaning) {
 
   // Detect first part of speech for default type
   const firstMeaning = (entry.meanings || [])[0];
+  lookupCurrentDef = (firstMeaning && firstMeaning.definitions && firstMeaning.definitions[0] && firstMeaning.definitions[0].definition) || "";
   if (firstMeaning) {
     const t0 = posMapVI[firstMeaning.partOfSpeech];
     lookupSelectedType = LOOKUP_TYPES.indexOf(t0) >= 0 ? t0 : "Danh từ";
@@ -1139,7 +1148,7 @@ function addFromLookup() {
   const meaning = viEl ? viEl.value.trim() : "";
   if (!meaning) { showMsg("Hãy nhập nghĩa tiếng Việt trước khi thêm!"); if (viEl) viEl.focus(); return; }
 
-  saveWord(lookupCurrentWord, meaning, lookupSelectedType);
+  saveWord(lookupCurrentWord, meaning, lookupSelectedType, lookupCurrentDef);
 
   const btn = document.getElementById("lookup-add-btn");
   if (btn) { btn.disabled = true; btn.textContent = "✅ Đã thêm vào kho!"; }
@@ -1162,6 +1171,9 @@ document.getElementById("word-input").addEventListener("keydown", function(e) {
   if (e.key === "Enter") document.getElementById("meaning-input").focus();
 });
 document.getElementById("meaning-input").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") document.getElementById("meaning-en-input").focus();
+});
+document.getElementById("meaning-en-input").addEventListener("keydown", function(e) {
   if (e.key === "Enter") addWord();
 });
 
