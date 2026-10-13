@@ -134,11 +134,19 @@
         </div>
       </div>
       <div class="input-group">
+        <label>Bạn muốn nhập nghĩa nào?</label>
+        <div class="seg-control" id="meaning-lang-selector">
+          <button type="button" class="seg-btn active" data-lang="vi">🇻🇳 Tiếng Việt</button>
+          <button type="button" class="seg-btn" data-lang="en">🇬🇧 Tiếng Anh</button>
+          <button type="button" class="seg-btn" data-lang="both">Cả hai</button>
+        </div>
+      </div>
+      <div class="input-group" id="meaning-vi-group">
         <label>Nghĩa tiếng Việt</label>
         <input type="text" id="meaning-input" placeholder="Ví dụ: xinh đẹp" autocomplete="off">
       </div>
-      <div class="input-group">
-        <label>Nghĩa tiếng Anh <span class="label-opt">(không bắt buộc)</span></label>
+      <div class="input-group" id="meaning-en-group" style="display:none">
+        <label>Nghĩa tiếng Anh</label>
         <input type="text" id="meaning-en-input" placeholder="Ví dụ: having beauty; attractive" autocomplete="off" spellcheck="false">
       </div>
       <div class="input-group">
@@ -289,7 +297,12 @@
         <div class="settings-text"><strong>Giờ nhắc</strong><span>Chỉ nhắc nếu hôm nay bạn chưa ôn</span></div>
         <input type="time" id="reminder-time" value="20:00" onchange="setReminderTime(this.value)">
       </div>
+      <div class="settings-row settings-col">
+        <div class="settings-text"><strong>Nhắc lại sau mỗi <span id="reminder-days-label">1</span> ngày</strong><span>Chọn từ 1 đến 30 ngày. Nếu bạn đã ôn thì tính lại từ hôm đó</span></div>
+        <input type="range" id="reminder-days" min="1" max="30" step="1" value="1" oninput="setReminderDays(this.value)">
+      </div>
       <button class="secondary-btn" onclick="testReminder()">Gửi thông báo thử</button>
+      <pre class="notif-diag" id="notif-diag"></pre>
     </div>
     <div class="settings-card">
       <div class="settings-row">
@@ -298,7 +311,7 @@
         <span id="install-done" style="display:none">✅ Đã cài</span>
       </div>
     </div>
-    <p class="settings-note">Nhắc nhở chạy ngay trên máy bạn (không qua máy chủ), nên hoạt động tốt nhất khi đã cài app. Android/Chrome: có thể nhắc cả khi đã tắt app. iPhone: cần iOS 16.4+ và phải thêm vào Màn hình chính; thông báo chủ yếu hiện khi bạn mở app quanh giờ nhắc.</p>
+    <p class="settings-note">Nhắc nhở chạy ngay trên máy bạn (không qua máy chủ) và cần web chạy bằng HTTPS. Android/Chrome: nên cài app để nhắc ổn định hơn. iPhone: cần iOS 16.4+ và phải thêm vào Màn hình chính rồi mở từ icon. Nếu vẫn lỗi, xem khung chẩn đoán phía trên để biết thiếu gì.</p>
   </div>
 
   <!-- ===== BACKUP SCREEN ===== -->
@@ -515,7 +528,7 @@
 <div id="convert-popup" class="overlay hidden">
   <div class="overlay-card convert-card">
     <h2>🔄 Văn bản → JSON</h2>
-    <p class="convert-help">Mỗi dòng một từ: <code>hello - xin chào</code><br>Thêm loại từ: <code>run (v) - chạy</code> · Thêm nghĩa tiếng Anh: <code>run (v) - chạy | to move fast</code></p>
+    <p class="convert-help">Mỗi dòng một từ: <code>hello - xin chào</code><br>Thêm loại từ: <code>run (v) - chạy</code> · Thêm nghĩa tiếng Anh: <code>run (v) - chạy | to move fast</code> · Chỉ nghĩa tiếng Anh: <code>run (v) - | to move fast</code></p>
     <textarea id="convert-input" placeholder="hello - xin chào&#10;beautiful (adj) - xinh đẹp | having beauty&#10;run (v) - chạy"></textarea>
     <button class="primary-btn" onclick="runConvert()">Convert ➜</button>
     <div class="convert-status" id="convert-status"></div>

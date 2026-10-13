@@ -1785,3 +1785,11 @@ body { transition: background .2s, color .2s; }
 .convert-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .convert-actions .primary-btn { grid-column: 1 / -1; }
 @media (min-width: 768px) { .app-icon-grid { grid-template-columns: repeat(5, 1fr); } }
+
+/* meaning-language selector + reminder slider/diagnostics */
+.seg-control { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; background: var(--pink-pale); border: 1px solid var(--border); border-radius: 14px; }
+.seg-btn { padding: 10px 6px; border: none; border-radius: 10px; background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: .15s; }
+.seg-btn.active { background: var(--pink); color: var(--on-primary); }
+.settings-col { flex-direction: column; align-items: stretch; }
+#reminder-days { width: 100%; accent-color: var(--pink); }
+.notif-diag { font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1.6; color: var(--text-muted); background: var(--pink-pale); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; word-break: break-all; margin: 4px 0 0; }

@@ -301,11 +301,17 @@ async function checkSpelling(word) {
 ============================================== */
 async function addWord() {
   const w = document.getElementById("word-input").value.trim();
-  const m = document.getElementById("meaning-input").value.trim();
+  const viText = document.getElementById("meaning-input").value.trim();
+  const enText = document.getElementById("meaning-en-input").value.trim();
   const t = selectedType;
-  const en = document.getElementById("meaning-en-input").value.trim();
+  // Người dùng chọn nhập nghĩa tiếng Việt, tiếng Anh, hoặc cả hai
+  const m = meaningLang === "en" ? enText : viText;
+  const en = meaningLang === "both" ? enText : "";
 
-  if (!w || !m) { showMsg("Bạn chưa nhập đủ dữ liệu!"); return; }
+  if (!w || !m || (meaningLang === "both" && !en)) {
+    showMsg(meaningLang === "both" ? "Hãy nhập đủ cả nghĩa tiếng Việt và tiếng Anh!" : "Bạn chưa nhập đủ dữ liệu!");
+    return;
+  }
 
   if (words.some(item => item.word.toLowerCase() === w.toLowerCase())) {
     showMsg('"' + w + '" đã tồn tại trong danh sách!'); return;
@@ -314,17 +320,35 @@ async function addWord() {
   const suggestion = await checkSpelling(w);
   if (suggestion && typeof suggestion === "string" && suggestion.toLowerCase() !== w.toLowerCase()) {
     showMsg('Ý bạn là "' + suggestion + '"?',
-      () => saveWord(suggestion, m, t, en),
-      () => saveWord(w, m, t, en)
+      () => saveWord(suggestion, m, t, en, meaningLang),
+      () => saveWord(w, m, t, en, meaningLang)
     );
   } else {
-    saveWord(w, m, t, en);
+    saveWord(w, m, t, en, meaningLang);
   }
 }
 
-function saveWord(word, meaning, type, meaningEn) {
+let meaningLang = localStorage.getItem("mochi_meaning_lang") || "vi";
+
+function setMeaningLang(lang) {
+  meaningLang = lang;
+  localStorage.setItem("mochi_meaning_lang", lang);
+  document.querySelectorAll("#meaning-lang-selector .seg-btn").forEach(function(b) {
+    b.classList.toggle("active", b.dataset.lang === lang);
+  });
+  document.getElementById("meaning-vi-group").style.display = lang === "en" ? "none" : "";
+  document.getElementById("meaning-en-group").style.display = lang === "vi" ? "none" : "";
+}
+document.getElementById("meaning-lang-selector").addEventListener("click", function(e) {
+  const b = e.target.closest(".seg-btn");
+  if (b) setMeaningLang(b.dataset.lang);
+});
+setMeaningLang(meaningLang);
+
+function saveWord(word, meaning, type, meaningEn, lang) {
   const item = { word, meaning, type, favorite: false };
   if (meaningEn) item.meaningEn = meaningEn;
+  if (lang === "en") item.meaningLang = "en";
   words.push(item);
   localStorage.setItem("mochi_words", JSON.stringify(words));
   updateHeaderStats();
@@ -618,7 +642,7 @@ function renderWordList() {
       '<button class="word-star-btn' + (w.favorite ? ' active' : '') + '" onclick="toggleFavorite(' + realIdx + ')" title="Đánh dấu yêu thích">' + (w.favorite ? '⭐' : '☆') + '</button>' +
       '<div class="word-item-text">' +
         '<div class="word-item-en">' + w.word + (wrongCount > 0 ? ' <span class="wrong-tag">❌ x' + wrongCount + '</span>' : '') + '</div>' +
-        '<div class="word-item-vi">' + w.meaning + '</div>' +
+        '<div class="word-item-vi">' + (w.meaningLang === "en" ? "🇬🇧 " : "") + escHtml(w.meaning) + '</div>' +
         (w.meaningEn ? '<div class="word-item-en-def">' + escHtml(w.meaningEn) + '</div>' : '') +
       '</div>' +
       '<span class="word-item-type">' + w.type + '</span>' +
@@ -1171,7 +1195,7 @@ document.getElementById("word-input").addEventListener("keydown", function(e) {
   if (e.key === "Enter") document.getElementById("meaning-input").focus();
 });
 document.getElementById("meaning-input").addEventListener("keydown", function(e) {
-  if (e.key === "Enter") document.getElementById("meaning-en-input").focus();
+  if (e.key === "Enter") { if (meaningLang === "both") document.getElementById("meaning-en-input").focus(); else addWord(); }
 });
 document.getElementById("meaning-en-input").addEventListener("keydown", function(e) {
   if (e.key === "Enter") addWord();

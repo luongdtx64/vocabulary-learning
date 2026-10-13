@@ -13,7 +13,7 @@
     return new Date(t).toLocaleString("vi-VN", { hour12: false, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   };
   const isStandalone = function () { return matchMedia("(display-mode: standalone)").matches || navigator.standalone; };
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   /* ---------- hook vào hàm có sẵn ---------- */
   const _showScreen = showScreen;
@@ -34,6 +34,7 @@
       swReg = r;
       syncReminderState();
       registerPeriodicSync();
+      refreshReminderUI();
     }).catch(function () {});
   }
   window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferredInstall = e; });
@@ -54,9 +55,35 @@
   };
 
   /* ==============================================
-     NHẮC NHỞ ÔN TẬP
+     NHẮC NHỞ ÔN TẬP — lặp lại mỗi N ngày (1–30)
   ============================================== */
-  const remSettings = function () { return LS.get("mochi_reminder", { enabled: false, time: "20:00" }); };
+  const DAY = 86400000, NEVER = -1e9;
+  const dayNum = function (d) { d = d || new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY); };
+  const remSettings = function () {
+    const s = LS.get("mochi_reminder", {});
+    return { enabled: !!s.enabled, time: s.time || "20:00", everyDays: Math.min(30, Math.max(1, parseInt(s.everyDays, 10) || 1)) };
+  };
+  const studiedDay = function () {
+    const t = localStorage.getItem("mochi_last_date"), d = t ? new Date(t) : null;
+    return d && !isNaN(d) ? dayNum(d) : NEVER;
+  };
+  const pageNotifiedDay = function () { const v = parseInt(localStorage.getItem("mochi_reminder_day"), 10); return isNaN(v) ? NEVER : v; };
+
+  // Máy này có thể bật thông báo không? Trả về lý do cụ thể để người dùng biết cách xử lý.
+  function notifSupport() {
+    const ua = navigator.userAgent;
+    if (!window.isSecureContext)
+      return { ok: false, msg: "Trang đang mở bằng HTTP hoặc file nên điện thoại chặn thông báo. Hãy mở web bằng địa chỉ HTTPS (GitHub Pages, Netlify, Vercel...)." };
+    if (/FBAN|FBAV|FB_IAB|Instagram|Zalo|Line\/|MicroMessenger|Messenger|TikTok|Snapchat/i.test(ua) || /; wv\)/.test(ua))
+      return { ok: false, msg: "Bạn đang mở trong trình duyệt của app khác (Zalo, Facebook...). Hãy mở link bằng Chrome hoặc Safari." };
+    if (isIOS && !isStandalone())
+      return { ok: false, msg: "iPhone chỉ cho thông báo khi app được thêm vào Màn hình chính (iOS 16.4+): bấm Chia sẻ → Thêm vào MH chính, rồi mở app từ icon vừa tạo." };
+    if (!("Notification" in window))
+      return { ok: false, msg: "Trình duyệt này không có API thông báo. Hãy thử Chrome (Android) hoặc Safari (iPhone, đã thêm vào Màn hình chính)." };
+    if (!("serviceWorker" in navigator))
+      return { ok: false, msg: "Trình duyệt không hỗ trợ Service Worker nên không gửi được thông báo trên điện thoại." };
+    return { ok: true };
+  }
 
   async function readCacheState() {
     try {
@@ -66,51 +93,59 @@
     } catch (e) { return null; }
   }
   // Ghi trạng thái cho service worker (nó không đọc được localStorage)
-  window.syncReminderState = async function () {
+  window.syncReminderState = async function (reset) {
     try {
-      const s = remSettings();
-      const old = await readCacheState();
-      const mine = localStorage.getItem("mochi_reminder_last") || "";
-      const swLast = old && old.lastNotified || "";
+      const s = remSettings(), old = reset ? null : await readCacheState();
       const c = await caches.open("eto-meta");
       await c.put("reminder-state", new Response(JSON.stringify({
-        enabled: s.enabled, time: s.time,
-        lastNotified: mine === todayStr() || swLast !== todayStr() ? mine : swLast,
-        lastStudied: localStorage.getItem("mochi_last_date") || ""
+        enabled: s.enabled, time: s.time, everyDays: s.everyDays,
+        lastNotified: Math.max(pageNotifiedDay(), old && typeof old.lastNotified === "number" ? old.lastNotified : NEVER),
+        lastStudied: studiedDay()
       })));
     } catch (e) {}
   };
 
+  // Khi bật / đổi giờ: nếu giờ nhắc hôm nay đã qua thì bắt đầu tính từ hôm nay, tránh nhắc ngay lập tức
+  function anchorReminder() {
+    const p = remSettings().time.split(":").map(Number), at = new Date();
+    at.setHours(p[0], p[1], 0, 0);
+    if (new Date() >= at) localStorage.setItem("mochi_reminder_day", String(dayNum()));
+    else localStorage.removeItem("mochi_reminder_day");
+  }
+
+  async function getReg() {
+    if (!("serviceWorker" in navigator)) return null;
+    try { // .ready đợi service worker active; getRegistration() có thể trả về bản chưa active
+      return await Promise.race([navigator.serviceWorker.ready, new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timeout")); }, 5000); })]);
+    } catch (e) { return null; }
+  }
   async function notifyNow() {
-    if (!("Notification" in window) || Notification.permission !== "granted") return false;
     const opts = {
       body: "Đến giờ ôn từ vựng rồi! Chỉ 5 phút thôi 💪",
       icon: "icons/icon-192.png", badge: "icons/icon-192.png", tag: "eto-review", data: { url: "./" }
     };
+    const reg = await getReg();
     try {
-      const reg = swReg || (navigator.serviceWorker && await navigator.serviceWorker.getRegistration());
-      if (reg) await reg.showNotification("ETO Club 📚", opts);
-      else new Notification("ETO Club 📚", opts);
-      return true;
-    } catch (e) { return false; }
+      if (reg && reg.showNotification) { await reg.showNotification("ETO Club 📚", opts); return { ok: true }; }
+      new Notification("ETO Club 📚", opts); // chỉ dùng được trên máy tính
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: (e && e.message) || String(e) };
+    }
   }
 
+  function isDue(s, lastN, lastS, now) {
+    const p = s.time.split(":").map(Number), at = new Date(now);
+    at.setHours(p[0], p[1], 0, 0);
+    return now >= at && dayNum(now) - Math.max(lastN, lastS) >= s.everyDays;
+  }
   async function checkReminder() {
     const s = remSettings();
-    if (!s.enabled) return;
-    const now = new Date(), parts = s.time.split(":").map(Number);
-    const due = new Date(); due.setHours(parts[0], parts[1], 0, 0);
-    if (now < due) return;
+    if (!s.enabled || !notifSupport().ok || Notification.permission !== "granted") return;
     const st = await readCacheState();
-    if (localStorage.getItem("mochi_reminder_last") === todayStr() || (st && st.lastNotified === todayStr())) return;
-    if (localStorage.getItem("mochi_last_date") === todayStr()) { // hôm nay đã ôn rồi
-      localStorage.setItem("mochi_reminder_last", todayStr());
-      return;
-    }
-    if (await notifyNow()) {
-      localStorage.setItem("mochi_reminder_last", todayStr());
-      syncReminderState();
-    }
+    const lastN = Math.max(pageNotifiedDay(), st && typeof st.lastNotified === "number" ? st.lastNotified : NEVER);
+    if (!isDue(s, lastN, studiedDay(), new Date())) return;
+    if ((await notifyNow()).ok) { localStorage.setItem("mochi_reminder_day", String(dayNum())); syncReminderState(); }
   }
   setInterval(checkReminder, 60000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { checkReminder(); autoBackupCheck(); } });
@@ -126,51 +161,74 @@
     } catch (e) { return false; }
   }
 
+  async function askPermission() {
+    if (Notification.permission === "default") {
+      try { await Notification.requestPermission(); } catch (e) {}
+    }
+    return Notification.permission === "granted";
+  }
+
   window.toggleReminder = async function () {
     const s = remSettings();
     if (!s.enabled) {
-      if (!("Notification" in window)) { showMsg("Trình duyệt này không hỗ trợ thông báo."); return; }
-      if (Notification.permission === "default") await Notification.requestPermission();
-      if (Notification.permission !== "granted") {
-        showMsg("Bạn cần cho phép thông báo trong cài đặt trình duyệt/điện thoại.");
-        refreshReminderUI();
-        return;
+      const sup = notifSupport();
+      if (!sup.ok) { showMsg(sup.msg); refreshReminderUI(); return; }
+      if (!(await askPermission())) {
+        showMsg("Bạn cần cho phép thông báo cho trang này trong cài đặt trình duyệt/điện thoại.");
+        refreshReminderUI(); return;
       }
       s.enabled = true;
+      LS.set("mochi_reminder", s);
+      anchorReminder();
+      await syncReminderState(true);
     } else {
       s.enabled = false;
+      LS.set("mochi_reminder", s);
+      await syncReminderState();
     }
-    LS.set("mochi_reminder", s);
-    await syncReminderState();
     await registerPeriodicSync();
     refreshReminderUI();
   };
   window.setReminderTime = function (v) {
     if (!v) return;
-    const s = remSettings(); s.time = v;
-    LS.set("mochi_reminder", s);
-    localStorage.removeItem("mochi_reminder_last");
-    syncReminderState(); refreshReminderUI();
+    const s = remSettings(); s.time = v; LS.set("mochi_reminder", s);
+    anchorReminder(); syncReminderState(true); refreshReminderUI();
+  };
+  window.setReminderDays = function (v) {
+    const s = remSettings(); s.everyDays = Math.min(30, Math.max(1, parseInt(v, 10) || 1));
+    LS.set("mochi_reminder", s); syncReminderState(); refreshReminderUI();
   };
   window.testReminder = async function () {
-    if (!("Notification" in window)) { showMsg("Trình duyệt này không hỗ trợ thông báo."); return; }
-    if (Notification.permission === "default") await Notification.requestPermission();
-    if (Notification.permission !== "granted") { showMsg("Thông báo đang bị chặn. Hãy bật lại trong cài đặt."); return; }
-    showMsg((await notifyNow()) ? "Đã gửi thông báo thử!" : "Không gửi được thông báo.");
+    const sup = notifSupport();
+    if (!sup.ok) { showMsg(sup.msg); return; }
+    if (!(await askPermission())) { showMsg("Thông báo đang bị chặn. Hãy bật lại trong cài đặt trình duyệt/điện thoại."); refreshReminderUI(); return; }
+    const r = await notifyNow();
+    showMsg(r.ok ? "Đã gửi thông báo thử! Nếu không thấy, kiểm tra chế độ Không làm phiền và cài đặt thông báo của trình duyệt." : "Không gửi được thông báo: " + r.error);
+    refreshReminderUI();
   };
+
   function refreshReminderUI() {
-    const s = remSettings();
-    const perm = ("Notification" in window) ? Notification.permission : "unsupported";
-    const on = s.enabled && perm === "granted";
     const t = $("reminder-toggle"); if (!t) return;
+    const s = remSettings(), sup = notifSupport();
+    const perm = ("Notification" in window) ? Notification.permission : "none";
+    const on = s.enabled && sup.ok && perm === "granted";
     t.textContent = on ? "Bật" : "Tắt";
     t.classList.toggle("on", on);
     $("reminder-time").value = s.time;
-    $("reminder-status").textContent = perm === "denied" ? "Thông báo đang bị chặn trong cài đặt"
-      : perm === "unsupported" ? "Trình duyệt không hỗ trợ thông báo"
-      : on ? "Sẽ nhắc lúc " + s.time + " mỗi ngày nếu bạn chưa ôn" : "Đang tắt";
+    $("reminder-days").value = s.everyDays;
+    $("reminder-days-label").textContent = s.everyDays;
+    $("reminder-status").textContent = !sup.ok ? "⚠️ " + sup.msg
+      : perm === "denied" ? "⚠️ Thông báo đang bị chặn trong cài đặt trình duyệt"
+      : on ? "Nhắc lúc " + s.time + ", lặp lại mỗi " + s.everyDays + " ngày nếu bạn chưa ôn" : "Đang tắt";
     $("install-btn").style.display = isStandalone() ? "none" : "";
     $("install-done").style.display = isStandalone() ? "" : "none";
+    $("notif-diag").textContent = [
+      "HTTPS: " + (window.isSecureContext ? "✓" : "✗"),
+      "Service Worker: " + (swReg ? "✓ đã đăng ký" : ("serviceWorker" in navigator ? "… đang chờ" : "✗")),
+      "Quyền thông báo: " + perm,
+      "Đã cài app: " + (isStandalone() ? "✓" : "chưa"),
+      navigator.userAgent.slice(0, 80)
+    ].join("\n");
   }
 
   /* ==============================================
@@ -305,12 +363,12 @@
       const bar = right.indexOf("|");
       const vi = clean(bar >= 0 ? right.slice(0, bar) : right), en = bar >= 0 ? clean(right.slice(bar + 1)) : "";
       const word = clean(left);
-      if (!word || !vi) { skipped.push(i + 1); return; }
+      if (!word || (!vi && !en)) { skipped.push(i + 1); return; }
       const key = word.toLowerCase();
       if (seen.has(key)) { skipped.push(i + 1); return; }
       seen.add(key);
-      const item = { word: word, meaning: vi, type: type || "Danh từ" };
-      if (en) item.meaningEn = en;
+      const item = vi ? { word: word, meaning: vi, type: type || "Danh từ" } : { word: word, meaning: en, type: type || "Danh từ", meaningLang: "en" };
+      if (vi && en) item.meaningEn = en;
       out.push(item);
     });
     return { items: out, skipped: skipped };

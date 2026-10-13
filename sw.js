@@ -1,5 +1,5 @@
 /* ETO Club service worker: offline cache + review reminders */
-const VER = 'eto-v1';
+const VER = 'eto-v2';
 const SHELL = ['./', 'index.html', 'style.css', 'scripts.js', 'app-extra.js', 'manifest.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -42,19 +42,23 @@ async function readState() {
   const r = await c.match('reminder-state');
   return r ? r.json() : null;
 }
+const DAY = 86400000;
+const dayNum = d => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / DAY);
 async function maybeNotify() {
   const s = await readState();
   if (!s || !s.enabled) return;
-  const now = new Date(), today = now.toDateString();
+  const now = new Date();
   const [h, m] = (s.time || '20:00').split(':').map(Number);
-  const due = new Date(); due.setHours(h, m, 0, 0);
-  if (now < due || s.lastNotified === today || s.lastStudied === today) return;
+  const at = new Date(now); at.setHours(h, m, 0, 0);
+  const num = v => (typeof v === 'number' ? v : -1e9);
+  const last = Math.max(num(s.lastNotified), num(s.lastStudied));
+  if (now < at || dayNum(now) - last < (s.everyDays || 1)) return;
   await self.registration.showNotification('ETO Club 📚', {
     body: 'Đến giờ ôn từ vựng rồi! Chỉ 5 phút thôi 💪',
     icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
     tag: 'eto-review', data: { url: './' }
   });
-  s.lastNotified = today;
+  s.lastNotified = dayNum(now);
   const c = await caches.open('eto-meta');
   await c.put('reminder-state', new Response(JSON.stringify(s)));
 }
